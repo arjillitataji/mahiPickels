@@ -229,7 +229,7 @@ app.get('*', (req, res) => {
 
 async function start() {
     if (!MONGODB_URI) throw new Error('MONGODB_URI or MONGODB_URI_DIRECT is required');
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, { dbName: process.env.DB_NAME || 'mahipickels' });
     await seedDatabase();
     app.listen(PORT, () => console.log(`Mahi Home Pickles backend running on port ${PORT} with MongoDB`));
 }
