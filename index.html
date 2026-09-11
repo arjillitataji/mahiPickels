@@ -102,39 +102,192 @@
     <main id="main-content">
         <!-- New visitor landing page -->
         <div id="page-landing" class="page active">
-            <section class="landing-page">
-                <div class="landing-image"></div>
-                <div class="landing-content">
-                    <p class="landing-kicker">MAHI HOME PICKLES / HOMEMADE</p>
+            <!-- Hero Section -->
+            <section class="landing-hero">
+                <div class="hero-bg" style="background-image: url('https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1600&q=80')"></div>
+                <div class="hero-overlay"></div>
+                <div class="hero-content">
+                    <p class="hero-kicker">MAHI HOME PICKLES / HOMEMADE</p>
                     <h1>Taste of<br><em>Home.</em></h1>
-                    <p class="landing-copy">Traditional homemade pickles made with love, sun-dried spices, and the finest ingredients.</p>
-                    <div class="landing-actions">
-                        <button class="landing-primary" onclick="app.setLoginTab(document.querySelector('.login-tab'), 'register'); app.navigate('login')">Create an account</button>
-                        <button class="landing-secondary" onclick="app.navigate('login')">Sign in <span aria-hidden="true">&rarr;</span></button>
+                    <p class="hero-desc">Traditional homemade pickles crafted with love, sun-dried spices, and the finest ingredients. Slow-crafted in small batches for the authentic taste you remember from home.</p>
+                    <div class="hero-btns">
+                        <button class="btn-hero-primary" onclick="app.setLoginTab(document.querySelector('.login-tab'), 'register'); app.navigate('login')">Create Account</button>
+                        <button class="btn-hero-secondary" onclick="app.navigate('login')">Sign In <span aria-hidden="true">&rarr;</span></button>
                     </div>
-                    <div class="landing-note"><span></span> Slow-crafted, small-batch pickles</div>
+                </div>
+                <div class="hero-badge"><span></span> Free delivery on orders above ₹500</div>
+            </section>
+
+            <!-- Pickle Showcase -->
+            <section class="landing-showcase">
+                <div class="container">
+                    <div class="showcase-header">
+                        <span class="section-tag">OUR COLLECTION</span>
+                        <h2>Explore Our Pickles</h2>
+                        <p>From classic mango to fiery chilli, each jar is a burst of tradition and flavor</p>
+                    </div>
+                    <div class="showcase-grid">
+                        <div class="showcase-card">
+                            <div class="showcase-img" style="background-image: url('https://images.unsplash.com/photo-1553279768-865429fa0078?w=600&q=80')"></div>
+                            <div class="showcase-body">
+                                <span class="showcase-tag">Bestseller</span>
+                                <h3>Mango Pickle</h3>
+                                <p>Classic tangy mango pickle with traditional spices</p>
+                            </div>
+                        </div>
+                        <div class="showcase-card">
+                            <div class="showcase-img" style="background-image: url('https://images.unsplash.com/photo-1588252901878-78a9c81cb7ad?w=600&q=80')"></div>
+                            <div class="showcase-body">
+                                <span class="showcase-tag">Spicy</span>
+                                <h3>Chilli Pickle</h3>
+                                <p>Fiery red chilli pickle for the bold palate</p>
+                            </div>
+                        </div>
+                        <div class="showcase-card">
+                            <div class="showcase-img" style="background-image: url('https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=600&q=80')"></div>
+                            <div class="showcase-body">
+                                <span class="showcase-tag">Aromatic</span>
+                                <h3>Garlic Pickle</h3>
+                                <p>Bold garlic pickle with fenugreek and spices</p>
+                            </div>
+                        </div>
+                        <div class="showcase-card">
+                            <div class="showcase-img" style="background-image: url('https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=600&q=80')"></div>
+                            <div class="showcase-body">
+                                <span class="showcase-tag">Non-Veg</span>
+                                <h3>Chicken Pickle</h3>
+                                <p>Spicy non-veg pickle with tender chicken pieces</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="showcase-cta">
+                        <button class="btn-outline" onclick="app.setLoginTab(document.querySelector('.login-tab'), 'register'); app.navigate('login')">View All Pickles <span aria-hidden="true">&rarr;</span></button>
+                    </div>
                 </div>
             </section>
-            <section class="landing-highlights" aria-label="Mahi Home Pickles highlights">
-                <div class="landing-highlight">
-                    <span class="highlight-number">01</span>
-                    <div>
-                        <h2>Homemade Taste</h2>
-                        <p>Traditional recipes crafted in small batches.</p>
+
+            <!-- Features -->
+            <section class="landing-features">
+                <div class="container">
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">🌿</div>
+                            <h3>100% Natural</h3>
+                            <p>No preservatives, no artificial colors. Just pure homemade goodness made from fresh ingredients.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">👨‍🍳</div>
+                            <h3>Homemade Recipe</h3>
+                            <p>Age-old family recipes passed down through generations, crafted with love and care in small batches.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">📦</div>
+                            <h3>Secure Delivery</h3>
+                            <p>Hygienically packed and delivered fresh to your doorstep with tamper-proof packaging.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">⭐</div>
+                            <h3>Premium Quality</h3>
+                            <p>Premium mustard oil, sun-dried spices, and the finest vegetables in every single jar.</p>
+                        </div>
                     </div>
                 </div>
-                <div class="landing-highlight">
-                    <span class="highlight-number">02</span>
-                    <div>
-                        <h2>Fresh &amp; Natural</h2>
-                        <p>No preservatives, just pure homemade goodness.</p>
+            </section>
+
+            <!-- Story/Process -->
+            <section class="landing-story">
+                <div class="container">
+                    <div class="story-layout">
+                        <div class="story-images">
+                            <div class="story-img main" style="background-image: url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80')"></div>
+                            <div class="story-img small" style="background-image: url('https://images.unsplash.com/photo-1596040033227-a4f33b1a3d2e?w=400&q=80')"></div>
+                        </div>
+                        <div class="story-content">
+                            <span class="section-tag">OUR STORY</span>
+                            <h2>Crafted with Tradition</h2>
+                            <p>Every jar of Mahi Home Pickles tells a story of tradition, patience, and love. Our pickles are made using the same time-honored methods that have been passed down through generations.</p>
+                            <div class="story-steps">
+                                <div class="story-step">
+                                    <span class="step-num">01</span>
+                                    <div>
+                                        <h4>Fresh Ingredients</h4>
+                                        <p>Handpicked seasonal vegetables and fruits</p>
+                                    </div>
+                                </div>
+                                <div class="story-step">
+                                    <span class="step-num">02</span>
+                                    <div>
+                                        <h4>Sun-Dried Spices</h4>
+                                        <p>Authentic spices roasted to perfection</p>
+                                    </div>
+                                </div>
+                                <div class="story-step">
+                                    <span class="step-num">03</span>
+                                    <div>
+                                        <h4>Slow-Crafted</h4>
+                                        <p>Matured in sunlight for bold, deep flavor</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn-outline" onclick="app.setLoginTab(document.querySelector('.login-tab'), 'register'); app.navigate('login')">Shop Our Pickles <span aria-hidden="true">&rarr;</span></button>
+                        </div>
                     </div>
                 </div>
-                <div class="landing-highlight">
-                    <span class="highlight-number">03</span>
-                    <div>
-                        <h2>Easy Delivery</h2>
-                        <p>Secure packaging and reliable delivery to your door.</p>
+            </section>
+
+            <!-- Testimonials -->
+            <section class="landing-testimonials">
+                <div class="container">
+                    <div class="testimonials-header">
+                        <span class="section-tag">TESTIMONIALS</span>
+                        <h2>Loved by Thousands</h2>
+                    </div>
+                    <div class="testimonials-grid">
+                        <div class="testimonial-card">
+                            <div class="testimonial-stars">★★★★★</div>
+                            <p>"The best homemade pickle I've ever tasted! Tastes exactly like my grandma used to make. Absolutely divine!"</p>
+                            <div class="testimonial-author">
+                                <div class="author-avatar">P</div>
+                                <div>
+                                    <strong>Priya Sharma</strong>
+                                    <span>Verified Buyer</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="testimonial-card">
+                            <div class="testimonial-stars">★★★★★</div>
+                            <p>"Absolutely delicious! The mango pickle is a must-try. Quality is outstanding and delivery was super fast."</p>
+                            <div class="testimonial-author">
+                                <div class="author-avatar">R</div>
+                                <div>
+                                    <strong>Rahul Verma</strong>
+                                    <span>Verified Buyer</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="testimonial-card">
+                            <div class="testimonial-stars">★★★★★</div>
+                            <p>"Finally found authentic homemade pickles online. The garlic pickle is my favorite - so flavorful and fresh!"</p>
+                            <div class="testimonial-author">
+                                <div class="author-avatar">A</div>
+                                <div>
+                                    <strong>Ananya Patel</strong>
+                                    <span>Verified Buyer</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Final CTA -->
+            <section class="landing-final-cta">
+                <div class="container">
+                    <h2>Ready to Taste Homemade?</h2>
+                    <p>Join thousands of happy customers who have made Mahi Home Pickles their go-to choice for authentic, homemade flavors.</p>
+                    <div class="final-cta-btns">
+                        <button class="btn-primary btn-large" onclick="app.setLoginTab(document.querySelector('.login-tab'), 'register'); app.navigate('login')">Get Started</button>
+                        <button class="btn-ghost" onclick="app.navigate('login')">Already have an account? Sign In</button>
                     </div>
                 </div>
             </section>
