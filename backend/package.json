@@ -1,7 +1,7 @@
 {
-    "name": "vastrakart-backend",
+    "name": "mahi-home-pickles-backend",
     "version": "1.0.0",
-    "description": "VastraKart backend API for Render with JSON file storage and Razorpay",
+    "description": "Mahi Home Pickles backend API for Render with MongoDB and Razorpay",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",

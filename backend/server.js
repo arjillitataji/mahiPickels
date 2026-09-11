@@ -207,7 +207,7 @@ const Counter = mongoose.model('Counter', counterSchema);
 
 app.get('/api/settings', requireAdmin, asyncRoute(async(req, res) => {
     const setting = await Settings.findOne({ key: 'store' });
-    res.json((setting && setting.value) || { storeName: 'VastraKart', email: 'support@vastrakart.com', currency: '₹' });
+    res.json((setting && setting.value) || { storeName: 'Mahi Home Pickles', email: 'support@mahipickles.com', currency: '₹' });
 }));
 app.put('/api/settings', requireAdmin, asyncRoute(async(req, res) => {
     await Settings.findOneAndUpdate({ key: 'store' }, { key: 'store', value: req.body }, { upsert: true, new: true });
@@ -231,7 +231,7 @@ async function start() {
     if (!MONGODB_URI) throw new Error('MONGODB_URI or MONGODB_URI_DIRECT is required');
     await mongoose.connect(MONGODB_URI);
     await seedDatabase();
-    app.listen(PORT, () => console.log(`VastraKart backend running on port ${PORT} with MongoDB`));
+    app.listen(PORT, () => console.log(`Mahi Home Pickles backend running on port ${PORT} with MongoDB`));
 }
 
 start().catch(error => {
