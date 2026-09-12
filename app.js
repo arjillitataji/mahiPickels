@@ -639,9 +639,12 @@ showProductModal(productId) {
     const priceDetail = document.getElementById('selected-price-detail');
     if (priceDetail) {
       priceDetail.style.display = 'block';
-      document.getElementById('modal-current-price').textContent = '₹' + price;
-      document.getElementById('modal-original-price').textContent = '₹' + mrp;
-      document.getElementById('modal-discount').textContent = '';
+      const currentPriceEl = document.getElementById('modal-current-price');
+      const originalPriceEl = document.getElementById('modal-original-price');
+      if (currentPriceEl) currentPriceEl.textContent = '₹' + price;
+      if (originalPriceEl) originalPriceEl.textContent = '₹' + mrp;
+      const discountEl = document.getElementById('modal-discount');
+      if (discountEl) discountEl.textContent = '';
     }
   },
 
