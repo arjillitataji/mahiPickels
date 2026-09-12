@@ -187,7 +187,10 @@ app.put('/api/payments/:id', requireAdmin, asyncRoute(async(req, res) => {
 app.post('/api/payment/create-order', asyncRoute(async(req, res) => {
     if (!razorpay) return res.status(503).json({ error: 'Razorpay is not configured' });
     const { amount, currency = 'INR', receipt } = req.body;
-    res.json(await razorpay.orders.create({ amount: amount * 100, currency, receipt: receipt || 'receipt_' + Date.now() }));
+    if (amount == null || isNaN(amount) || Number(amount) < 1) {
+        return res.status(400).json({ error: 'Amount is required and must be at least 1 rupee (100 paise)' });
+    }
+    res.json(await razorpay.orders.create({ amount: Math.round(amount * 100), currency, receipt: receipt || 'receipt_' + Date.now() }));
 }));
 app.post('/api/payment/verify', asyncRoute(async(req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;

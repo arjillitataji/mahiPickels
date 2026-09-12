@@ -924,6 +924,21 @@ if (this.cart.some(item => !item.size)) {
         name: 'Mahi Home Pickles',
         description: `Payment for Order ${order.id}`,
         order_id: razorpayOrder.id,
+        prefill: {
+          name: order.address?.name || 'Customer',
+          email: 'customer@mahipickles.com',
+          contact: order.address?.phone || '9876543210'
+        },
+        theme: {
+          color: '#2874f0'
+        },
+        modal: {
+          onmodalhide: () => {
+            this.showToast('Payment cancelled', 'info');
+          },
+          escape: true,
+          animation: true
+        },
         handler: async (response) => {
           try {
             await apiCall('/api/payment/verify', {
@@ -972,17 +987,16 @@ if (this.cart.some(item => !item.size)) {
             this.showToast('Payment verification failed. Please contact support.', 'error');
           }
         },
-        prefill: {
-          name: order.address?.name || 'Customer',
-          email: 'customer@mahipickles.com',
-          contact: order.address?.phone || '9876543210'
-        },
-        theme: {
-          color: '#2874f0'
+        payment: {
+          method: 'all'
         }
       };
 
       const rzp = new Razorpay(options);
+      rzp.on('payment.failed', (response) => {
+        console.error('Payment failed:', response);
+        this.showToast('Payment failed: ' + (response.error?.description || 'Please try again'), 'error');
+      });
       rzp.open();
 
     } catch (err) {
