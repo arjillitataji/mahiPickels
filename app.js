@@ -1134,7 +1134,12 @@ if (this.cart.some(item => !item.size)) {
       this.showToast('Refund initiated successfully! Amount will be credited back.', 'success');
     } catch (err) {
       console.error('Refund error:', err);
-      this.showToast(err.error || 'Failed to initiate refund. Please contact support.', 'error');
+      const errMsg = err.message || err.error || 'Failed to initiate refund. Please contact support.';
+      if (errMsg.includes('not configured') || errMsg.includes('503')) {
+        this.showToast('Razorpay is not configured on the server. Please contact support.', 'error');
+      } else {
+        this.showToast(errMsg, 'error');
+      }
     }
   },
 
