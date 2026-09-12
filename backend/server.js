@@ -131,7 +131,10 @@ app.get('/api/orders/:id', asyncRoute(async(req, res) => {
 
 app.post('/api/orders', asyncRoute(async(req, res) => {
     if (!req.body.userId) return res.status(400).json({ error: 'userId is required' });
-    const order = await Order.create({...req.body, id: req.body.id || 'ORD' + Date.now().toString().slice(-8), date: new Date().toISOString() });
+    const orderData = {...req.body, id: req.body.id || 'ORD' + Date.now().toString().slice(-8), date: new Date().toISOString() };
+    if (req.body.razorpayPaymentId) orderData.razorpayPaymentId = req.body.razorpayPaymentId;
+    if (req.body.razorpayOrderId) orderData.razorpayOrderId = req.body.razorpayOrderId;
+    const order = await Order.create(orderData);
     res.status(201).json(serialize(order));
 }));
 
@@ -202,6 +205,27 @@ app.get('/api/payment/key', (req, res) => {
     if (!process.env.RAZORPAY_KEY_ID) return res.status(503).json({ error: 'Razorpay is not configured' });
     res.json({ key: process.env.RAZORPAY_KEY_ID, currency: 'INR' });
 });
+
+// Razorpay Refund
+app.post('/api/payment/refund', asyncRoute(async(req, res) => {
+    if (!razorpay) return res.status(503).json({ error: 'Razorpay is not configured' });
+    const { orderId, razorpayPaymentId, amount, notes } = req.body;
+    if (!razorpayPaymentId) return res.status(400).json({ error: 'razorpayPaymentId is required' });
+    if (amount == null || isNaN(amount) || Number(amount) < 1) return res.status(400).json({ error: 'Amount is required and must be at least 1 rupee (100 paise)' });
+
+    const refundData = {
+        amount: Math.round(amount * 100),
+        notes: notes || { order_id: orderId }
+    };
+
+    try {
+        const refund = await razorpay.payments.refund(razorpayPaymentId, refundData);
+        res.json({ status: 'OK', refund_id: refund.id, amount: refund.amount, message: 'Refund initiated successfully' });
+    } catch (err) {
+        console.error('Refund error:', err);
+        res.status(400).json({ error: err.message || 'Refund failed' });
+    }
+}));
 
 const settingsSchema = new mongoose.Schema({ key: { type: String, unique: true }, value: mongoose.Schema.Types.Mixed });
 const counterSchema = new mongoose.Schema({ key: { type: String, unique: true }, lastNumber: { type: Number, default: 100000 } });

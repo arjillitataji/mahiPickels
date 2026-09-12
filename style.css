@@ -2277,6 +2277,36 @@ body.login-mode main {
     cursor: not-allowed;
 }
 
+.order-refund-btn {
+    padding: 8px 16px;
+    background: #fff;
+    color: #2e7d32;
+    border: 1px solid #2e7d32;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-right: 8px;
+}
+
+.order-refund-btn:hover {
+    background: #e8f5e9;
+}
+
+.refund-initiated {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.refund-processed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.refund-failed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
 
 /* --- PROFILE --- */
 

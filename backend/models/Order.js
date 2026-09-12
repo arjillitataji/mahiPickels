@@ -14,7 +14,10 @@ const orderSchema = new mongoose.Schema({
     trackingNumber: { type: String, default: '' },
     deliveryDate: { type: String, default: '' },
     razorpayOrderId: { type: String },
-    paymentStatus: { type: String, default: 'pending' }
+    razorpayPaymentId: { type: String },
+    paymentStatus: { type: String, default: 'pending' },
+    refundStatus: { type: String, default: '' },
+    refundId: { type: String }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

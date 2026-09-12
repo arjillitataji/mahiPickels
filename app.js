@@ -957,6 +957,8 @@ if (this.cart.some(item => !item.size)) {
               method: 'POST',
               body: JSON.stringify({
                 ...order,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
                 paymentStatus: 'paid',
                 payment: 'razorpay',
                 status: 'approved'
@@ -1025,11 +1027,14 @@ if (this.cart.some(item => !item.size)) {
 
     list.innerHTML = orders.map(order => {
       const canCancel = !['shipped', 'delivered', 'cancelled'].includes(order.status);
+      const isRazorpayPaid = order.payment === 'razorpay' && order.paymentStatus === 'paid';
+      const needsRefund = order.status === 'cancelled' && isRazorpayPaid && !order.refundStatus;
       return `
         <div class="order-card">
           <div class="order-header">
             <span class="order-id">${order.id}</span>
             <span class="order-status ${order.status}">${order.status}</span>
+            ${order.refundStatus ? `<span class="order-status refund-${order.refundStatus}" style="margin-left:8px;">Refund: ${order.refundStatus}</span>` : ''}
           </div>
           <div class="order-items">
             ${order.items.map(item => `
@@ -1040,6 +1045,7 @@ if (this.cart.some(item => !item.size)) {
             <span class="order-amount">₹${order.total || order.subtotal + DELIVERY_CHARGE}</span>
             <div>
               ${canCancel ? `<button class="order-cancel-btn" onclick="event.stopPropagation(); app.cancelOrder('${order.id}')">Cancel Order</button>` : ''}
+              ${needsRefund ? `<button class="order-refund-btn" onclick="event.stopPropagation(); app.requestRefund('${order.id}')">Request Refund</button>` : ''}
               <button class="order-track-btn" onclick="app.showTracking('${order.id}')">Track Order</button>
             </div>
           </div>
@@ -1057,14 +1063,58 @@ if (this.cart.some(item => !item.size)) {
     apiCall(`/api/orders/${orderId}`, {
       method: 'PUT',
       body: JSON.stringify({ status: 'cancelled' })
-    }).then(() => {
+    }).then(async () => {
       order.status = 'cancelled';
       this.saveOrders();
       this.renderOrders();
       this.showToast('Order cancelled successfully', 'success');
+
+      // Auto-trigger refund for Razorpay orders
+      if (order.payment === 'razorpay' && order.paymentStatus === 'paid' && order.razorpayPaymentId) {
+        await this.requestRefund(orderId, true);
+      }
     }).catch(err => {
       this.showToast(err.error || 'Failed to cancel order', 'error');
     });
+  },
+
+  async requestRefund(orderId, auto = false) {
+    const order = this.orders.find(o => o.id == orderId);
+    if (!order) {
+      this.showToast('Order not found', 'error');
+      return;
+    }
+    if (!order.razorpayPaymentId) {
+      this.showToast('No Razorpay payment found for this order', 'error');
+      return;
+    }
+    if (order.refundStatus) {
+      this.showToast('Refund already ' + order.refundStatus, 'info');
+      return;
+    }
+
+    if (!auto && !confirm('Request a refund for this cancelled order?')) return;
+
+    try {
+      const result = await apiCall('/api/payment/refund', {
+        method: 'POST',
+        body: JSON.stringify({
+          orderId: order.id,
+          razorpayPaymentId: order.razorpayPaymentId,
+          amount: order.total,
+          notes: { order_id: order.id }
+        })
+      });
+
+      order.refundStatus = 'initiated';
+      order.refundId = result.refund_id;
+      this.saveOrders();
+      this.renderOrders();
+      this.showToast('Refund initiated successfully! Amount will be credited back.', 'success');
+    } catch (err) {
+      console.error('Refund error:', err);
+      this.showToast(err.error || 'Failed to initiate refund. Please contact support.', 'error');
+    }
   },
 
   showTracking(orderId) {
