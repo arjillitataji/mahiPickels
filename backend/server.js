@@ -142,6 +142,10 @@ app.put('/api/orders/:id', asyncRoute(async(req, res) => {
     const order = await Order.findOne({ id: req.params.id });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (req.body.status === 'cancelled' && ['shipped', 'delivered', 'cancelled'].includes(order.status)) return res.status(400).json({ error: 'Order cannot be cancelled' });
+    if (req.body.razorpayPaymentId) order.razorpayPaymentId = req.body.razorpayPaymentId;
+    if (req.body.razorpayOrderId) order.razorpayOrderId = req.body.razorpayOrderId;
+    if (req.body.refundStatus) order.refundStatus = req.body.refundStatus;
+    if (req.body.refundId) order.refundId = req.body.refundId;
     Object.assign(order, req.body);
     await order.save();
     res.json(serialize(order));
@@ -206,11 +210,30 @@ app.get('/api/payment/key', (req, res) => {
     res.json({ key: process.env.RAZORPAY_KEY_ID, currency: 'INR' });
 });
 
+app.get('/api/orders/:id/payment-id', asyncRoute(async(req, res) => {
+    const order = await Order.findOne({ id: req.params.id });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json({ razorpayPaymentId: order.razorpayPaymentId || null, razorpayOrderId: order.razorpayOrderId || null });
+}));
+
 // Razorpay Refund
 app.post('/api/payment/refund', asyncRoute(async(req, res) => {
     if (!razorpay) return res.status(503).json({ error: 'Razorpay is not configured' });
-    const { orderId, razorpayPaymentId, amount, notes } = req.body;
-    if (!razorpayPaymentId) return res.status(400).json({ error: 'razorpayPaymentId is required' });
+    const { orderId, razorpayPaymentId, razorpayOrderId, amount, notes } = req.body;
+    let paymentId = razorpayPaymentId;
+
+    if (!paymentId && razorpayOrderId) {
+        try {
+            const orderInfo = await razorpay.orders.fetch(razorpayOrderId);
+            if (orderInfo.payments && orderInfo.payments.length > 0) {
+                paymentId = orderInfo.payments[0].id;
+            }
+        } catch (err) {
+            console.error('Failed to fetch payment from order:', err);
+        }
+    }
+
+    if (!paymentId) return res.status(400).json({ error: 'razorpayPaymentId is required' });
     if (amount == null || isNaN(amount) || Number(amount) < 1) return res.status(400).json({ error: 'Amount is required and must be at least 1 rupee (100 paise)' });
 
     const refundData = {
@@ -219,7 +242,7 @@ app.post('/api/payment/refund', asyncRoute(async(req, res) => {
     };
 
     try {
-        const refund = await razorpay.payments.refund(razorpayPaymentId, refundData);
+        const refund = await razorpay.payments.refund(paymentId, refundData);
         res.json({ status: 'OK', refund_id: refund.id, amount: refund.amount, message: 'Refund initiated successfully' });
     } catch (err) {
         console.error('Refund error:', err);

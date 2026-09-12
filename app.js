@@ -1060,9 +1060,13 @@ if (this.cart.some(item => !item.size)) {
     const order = this.orders.find(o => o.id == orderId);
     if (!order) return;
 
+    const updateBody = { status: 'cancelled' };
+    if (order.razorpayPaymentId) updateBody.razorpayPaymentId = order.razorpayPaymentId;
+    if (order.razorpayOrderId) updateBody.razorpayOrderId = order.razorpayOrderId;
+
     apiCall(`/api/orders/${orderId}`, {
       method: 'PUT',
-      body: JSON.stringify({ status: 'cancelled' })
+      body: JSON.stringify(updateBody)
     }).then(async () => {
       order.status = 'cancelled';
       this.saveOrders();
@@ -1070,7 +1074,7 @@ if (this.cart.some(item => !item.size)) {
       this.showToast('Order cancelled successfully', 'success');
 
       // Auto-trigger refund for Razorpay orders
-      if (order.payment === 'razorpay' && order.paymentStatus === 'paid' && order.razorpayPaymentId) {
+      if (order.payment === 'razorpay' && order.paymentStatus === 'paid') {
         await this.requestRefund(orderId, true);
       }
     }).catch(err => {
@@ -1079,12 +1083,27 @@ if (this.cart.some(item => !item.size)) {
   },
 
   async requestRefund(orderId, auto = false) {
-    const order = this.orders.find(o => o.id == orderId);
+    let order = this.orders.find(o => o.id == orderId);
     if (!order) {
       this.showToast('Order not found', 'error');
       return;
     }
-    if (!order.razorpayPaymentId) {
+
+    let paymentId = order.razorpayPaymentId;
+    let razorpayOrderId = order.razorpayOrderId;
+
+    // Try to fetch payment ID from backend if missing
+    if (!paymentId && razorpayOrderId) {
+      try {
+        const info = await apiCall(`/api/orders/${orderId}/payment-id`);
+        paymentId = info.razorpayPaymentId;
+        razorpayOrderId = info.razorpayOrderId;
+      } catch (err) {
+        console.error('Failed to fetch payment ID:', err);
+      }
+    }
+
+    if (!paymentId) {
       this.showToast('No Razorpay payment found for this order', 'error');
       return;
     }
@@ -1093,14 +1112,15 @@ if (this.cart.some(item => !item.size)) {
       return;
     }
 
-    if (!auto && !confirm('Request a refund for this cancelled order?')) return;
+    if (!auto && !confirm('Request a refund for this cancelled order? Amount: ₹' + order.total)) return;
 
     try {
       const result = await apiCall('/api/payment/refund', {
         method: 'POST',
         body: JSON.stringify({
           orderId: order.id,
-          razorpayPaymentId: order.razorpayPaymentId,
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: razorpayOrderId,
           amount: order.total,
           notes: { order_id: order.id }
         })
@@ -1108,6 +1128,7 @@ if (this.cart.some(item => !item.size)) {
 
       order.refundStatus = 'initiated';
       order.refundId = result.refund_id;
+      if (paymentId) order.razorpayPaymentId = paymentId;
       this.saveOrders();
       this.renderOrders();
       this.showToast('Refund initiated successfully! Amount will be credited back.', 'success');
