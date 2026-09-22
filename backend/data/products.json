@@ -1,0 +1,233 @@
+[
+  {
+    "id": 1,
+    "name": "Mahi Home Mango Pickle",
+    "category": "Veg",
+    "brand": "Mahi Home",
+    "description": "Traditional mango pickle made with fresh raw mangoes, sun-dried spices, and premium quality oil. A timeless homemade taste perfect with roti, paratha, and rice.",
+    "rating": 4.5,
+    "discount": 50,
+    "sizes": ["250g", "500g", "1kg"],
+    "weightPrices": [
+      { "size": "250g", "price": 199, "mrp": 399 },
+      { "size": "500g", "price": 349, "mrp": 699 },
+      { "size": "1kg", "price": 599, "mrp": 1199 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Mahi Home Garlic Pickle",
+    "category": "Veg",
+    "brand": "Mahi Home",
+    "description": "Aromatic garlic pickle crafted with whole garlic cloves, fenugreek, and traditional spices. Adds a bold punch to every meal.",
+    "rating": 4.4,
+    "discount": 49,
+    "sizes": ["250g", "500g", "1kg"],
+    "weightPrices": [
+      { "size": "250g", "price": 179, "mrp": 349 },
+      { "size": "500g", "price": 299, "mrp": 599 },
+      { "size": "1kg", "price": 499, "mrp": 999 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Mahi Home Lemon Pickle",
+    "category": "Veg",
+    "brand": "Mahi Home",
+    "description": "Zesty lemon pickle made with fresh lemons, sun-dried and tempered with mustard seeds and curry leaves. A tangy delight for pickle lovers.",
+    "rating": 4.3,
+    "discount": 50,
+    "sizes": ["250g", "500g"],
+    "weightPrices": [
+      { "size": "250g", "price": 189, "mrp": 379 },
+      { "size": "500g", "price": 329, "mrp": 659 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Mahi Home Mixed Pickle",
+    "category": "Veg",
+    "brand": "Mahi Home",
+    "description": "A vibrant mixed pickle with carrots, cauliflower, and green chilies. A colorful homemade blend that brings variety to your table.",
+    "rating": 4.6,
+    "discount": 50,
+    "sizes": ["500g", "1kg"],
+    "weightPrices": [
+      { "size": "500g", "price": 249, "mrp": 499 },
+      { "size": "1kg", "price": 449, "mrp": 899 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Mahi Home Chicken Pickle",
+    "category": "Non Veg",
+    "brand": "Mahi Home",
+    "description": "Spicy non-veg chicken pickle made with tender chicken pieces, traditional Indian spices, and oil. A rich homemade treat for meat lovers.",
+    "rating": 4.7,
+    "discount": 50,
+    "sizes": ["250g", "500g"],
+    "weightPrices": [
+      { "size": "250g", "price": 299, "mrp": 599 },
+      { "size": "500g", "price": 549, "mrp": 1099 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Mahi Home Fish Pickle",
+    "category": "Non Veg",
+    "brand": "Mahi Home",
+    "description": "Tangy fish pickle made with fresh fish pieces, vinegar, and a blend of spices. A coastal homemade recipe that melts in your mouth.",
+    "rating": 4.5,
+    "discount": 50,
+    "sizes": ["250g", "500g"],
+    "weightPrices": [
+      { "size": "250g", "price": 349, "mrp": 699 },
+      { "size": "500g", "price": 599, "mrp": 1199 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Mahi Home Spicy Chilli Pickle",
+    "category": "Veg",
+    "brand": "Mahi Home",
+    "description": "Hot and spicy chilli pickle made with fresh red chillies, garlic, and aromatic spices. Adds a fiery kick to any meal.",
+    "rating": 4.2,
+    "discount": 49,
+    "sizes": ["250g", "500g", "1kg"],
+    "weightPrices": [
+      { "size": "250g", "price": 169, "mrp": 329 },
+      { "size": "500g", "price": 289, "mrp": 579 },
+      { "size": "1kg", "price": 499, "mrp": 999 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Mahi Home Mutton Pickle",
+    "category": "Non Veg",
+    "brand": "Mahi Home",
+    "description": "Tender mutton pickle slow-cooked with yogurt, ginger, and traditional spices. A rich homemade delicacy for non-veg foodies.",
+    "rating": 4.6,
+    "discount": 50,
+    "sizes": ["250g", "500g"],
+    "weightPrices": [
+      { "size": "250g", "price": 399, "mrp": 799 },
+      { "size": "500g", "price": 699, "mrp": 1399 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Mahi Home Sweet Mango Pickle",
+    "category": "Veg",
+    "brand": "Mahi Home",
+    "description": "A milder, slightly sweet mango pickle made with jaggery and warm spices. Great for kids and those who prefer less heat.",
+    "rating": 4.4,
+    "discount": 49,
+    "sizes": ["500g", "1kg"],
+    "weightPrices": [
+      { "size": "500g", "price": 219, "mrp": 429 },
+      { "size": "1kg", "price": 389, "mrp": 779 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Mahi Home Ginger Pickle",
+    "category": "Veg",
+    "brand": "Mahi Home",
+    "description": "Fresh ginger pickle with a zesty kick. Made with young ginger, lemon juice, and a hint of fenugreek. Perfect for digestion and taste.",
+    "rating": 4.3,
+    "discount": 50,
+    "sizes": ["250g", "500g"],
+    "weightPrices": [
+      { "size": "250g", "price": 189, "mrp": 379 },
+      { "size": "500g", "price": 329, "mrp": 659 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Mahi Home Paneer Pickle",
+    "category": "Veg",
+    "brand": "Mahi Home",
+    "description": "Delicious paneer pickle made with soft cottage cheese, yogurt, and traditional spices. A protein-rich homemade treat.",
+    "rating": 4.5,
+    "discount": 50,
+    "sizes": ["250g", "500g"],
+    "weightPrices": [
+      { "size": "250g", "price": 229, "mrp": 459 },
+      { "size": "500g", "price": 399, "mrp": 799 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  },
+  {
+    "id": 12,
+    "name": "Mahi Home Chicken Liver Pickle",
+    "category": "Non Veg",
+    "brand": "Mahi Home",
+    "description": "Spicy chicken liver pickle cooked with onions, tomatoes, and aromatic spices. A flavorful homemade delicacy for non-veg lovers.",
+    "rating": 4.4,
+    "discount": 50,
+    "sizes": ["250g", "500g"],
+    "weightPrices": [
+      { "size": "250g", "price": 379, "mrp": 759 },
+      { "size": "500g", "price": 649, "mrp": 1299 }
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299623325-4c0e7b0a4b9c?w=500&q=80",
+      "https://images.unsplash.com/photo-1565299712131-c9b8c0a4b9c0?w=500&q=80"
+    ]
+  }
+]
