@@ -266,8 +266,11 @@ async function apiCall(url, options = {}) {
             ...restOptions
         });
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Request failed' }));
-            throw new Error(error.error || `HTTP ${response.status}`);
+            const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+            const requestError = new Error(errorData.error || `HTTP ${response.status}`);
+            requestError.status = response.status;
+            requestError.details = errorData;
+            throw requestError;
         }
         return await response.json();
     } catch (err) {
@@ -1028,7 +1031,8 @@ if (this.cart.some(item => !item.size)) {
     list.innerHTML = orders.map(order => {
       const canCancel = !['shipped', 'delivered', 'cancelled'].includes(order.status);
       const isRazorpayPaid = order.payment === 'razorpay' && order.paymentStatus === 'paid';
-      const needsRefund = order.status === 'cancelled' && isRazorpayPaid && !order.refundStatus;
+      const needsRefund = order.status === 'cancelled' && isRazorpayPaid && (!order.refundStatus || order.refundStatus === 'failed') && !order.refundProcessing;
+      const refundLabel = order.refundStatus === 'failed' ? 'Retry Refund' : 'Request Refund';
       return `
         <div class="order-card">
           <div class="order-header">
@@ -1045,7 +1049,7 @@ if (this.cart.some(item => !item.size)) {
             <span class="order-amount">₹${order.total || order.subtotal + DELIVERY_CHARGE}</span>
             <div>
               ${canCancel ? `<button class="order-cancel-btn" onclick="event.stopPropagation(); app.cancelOrder('${order.id}')">Cancel Order</button>` : ''}
-              ${needsRefund ? `<button class="order-refund-btn" onclick="event.stopPropagation(); app.requestRefund('${order.id}')">Request Refund</button>` : ''}
+              ${needsRefund ? `<button class="order-refund-btn" onclick="event.stopPropagation(); app.requestRefund('${order.id}')">${refundLabel}</button>` : ''}
               <button class="order-track-btn" onclick="app.showTracking('${order.id}')">Track Order</button>
             </div>
           </div>
@@ -1054,7 +1058,7 @@ if (this.cart.some(item => !item.size)) {
     }).join('');
   },
 
-  cancelOrder(orderId) {
+  async cancelOrder(orderId) {
     if (!confirm('Are you sure you want to cancel this order?')) return;
 
     const order = this.orders.find(o => o.id == orderId);
@@ -1064,35 +1068,48 @@ if (this.cart.some(item => !item.size)) {
     if (order.razorpayPaymentId) updateBody.razorpayPaymentId = order.razorpayPaymentId;
     if (order.razorpayOrderId) updateBody.razorpayOrderId = order.razorpayOrderId;
 
-    apiCall(`/api/orders/${orderId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateBody)
-    }).then(async () => {
+    try {
+      await apiCall(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateBody)
+      });
+
       order.status = 'cancelled';
       this.saveOrders();
       this.renderOrders();
-      this.showToast('Order cancelled successfully', 'success');
 
-      // Auto-trigger refund for Razorpay orders
       if (order.payment === 'razorpay' && order.paymentStatus === 'paid') {
-        await this.requestRefund(orderId, true);
+        const refundResult = await this.requestRefund(orderId, true, false);
+        if (refundResult.success) {
+          this.showToast('Order cancelled successfully. Refund initiated.', 'success');
+        } else {
+          this.showToast('Order cancelled successfully, but refund initiation failed: ' + refundResult.error, 'error');
+        }
+      } else {
+        this.showToast('Order cancelled successfully', 'success');
       }
-    }).catch(err => {
-      this.showToast(err.error || 'Failed to cancel order', 'error');
-    });
+    } catch (err) {
+      this.showToast(err.message || 'Failed to cancel order', 'error');
+    }
   },
 
-  async requestRefund(orderId, auto = false) {
+  async requestRefund(orderId, auto = false, notify = true) {
     let order = this.orders.find(o => o.id == orderId);
     if (!order) {
-      this.showToast('Order not found', 'error');
-      return;
+      const error = 'Order not found';
+      if (notify) this.showToast(error, 'error');
+      return { success: false, error };
+    }
+
+    if (order.refundProcessing) {
+      const error = 'Refund request is already in progress';
+      if (notify) this.showToast(error, 'info');
+      return { success: false, error };
     }
 
     let paymentId = order.razorpayPaymentId;
     let razorpayOrderId = order.razorpayOrderId;
 
-    // Try to fetch payment ID from backend if missing
     if (!paymentId && razorpayOrderId) {
       try {
         const info = await apiCall(`/api/orders/${orderId}/payment-id`);
@@ -1104,15 +1121,22 @@ if (this.cart.some(item => !item.size)) {
     }
 
     if (!paymentId) {
-      this.showToast('No Razorpay payment found for this order', 'error');
-      return;
+      const error = 'No Razorpay payment found for this order';
+      if (notify) this.showToast(error, 'error');
+      return { success: false, error };
     }
-    if (order.refundStatus) {
-      this.showToast('Refund already ' + order.refundStatus, 'info');
-      return;
+    if (order.refundStatus && order.refundStatus !== 'failed') {
+      const message = 'Refund already ' + order.refundStatus;
+      if (notify) this.showToast(message, 'info');
+      return { success: true, message };
     }
 
-    if (!auto && !confirm('Request a refund for this cancelled order? Amount: ₹' + order.total)) return;
+    if (!auto && !confirm('Request a refund for this cancelled order? Amount: ₹' + order.total)) {
+      return { success: false, error: 'Refund request cancelled' };
+    }
+
+    order.refundProcessing = true;
+    this.renderOrders();
 
     try {
       const result = await apiCall('/api/payment/refund', {
@@ -1126,20 +1150,35 @@ if (this.cart.some(item => !item.size)) {
         })
       });
 
-      order.refundStatus = 'initiated';
-      order.refundId = result.refund_id;
+      order.refundStatus = result.refund_status || (result.status === 'OK' ? 'initiated' : 'initiated');
+      order.refundId = result.refund_id || order.refundId;
+      order.refundAmount = result.amount != null ? Number(result.amount) / 100 : order.refundAmount;
       if (paymentId) order.razorpayPaymentId = paymentId;
       this.saveOrders();
       this.renderOrders();
-      this.showToast('Refund initiated successfully! Amount will be credited back.', 'success');
+
+      const message = order.refundStatus === 'processed'
+        ? 'Refund processed successfully.'
+        : 'Refund initiated successfully. Amount will be credited back.';
+      if (notify) this.showToast(message, 'success');
+      return { success: true, message };
     } catch (err) {
-      console.error('Refund error:', err);
       const errMsg = err.message || err.error || 'Failed to initiate refund. Please contact support.';
-      if (errMsg.includes('not configured') || errMsg.includes('503')) {
-        this.showToast('Razorpay is not configured on the server. Please contact support.', 'error');
-      } else {
-        this.showToast(errMsg, 'error');
+      console.error('Refund error:', err);
+      if (errMsg.includes('already in progress')) {
+        order.refundStatus = 'pending';
       }
+      if (notify) {
+        if (errMsg.includes('not configured') || errMsg.includes('503')) {
+          this.showToast('Razorpay is not configured on the server. Please contact support.', 'error');
+        } else {
+          this.showToast(errMsg, 'error');
+        }
+      }
+      return { success: false, error: errMsg };
+    } finally {
+      order.refundProcessing = false;
+      this.renderOrders();
     }
   },
 

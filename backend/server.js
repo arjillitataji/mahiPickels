@@ -49,6 +49,28 @@ function serialize(document) {
     return value;
 }
 
+function getRazorpayErrorMessage(error) {
+    if (!error) return 'Refund failed';
+    if (typeof error === 'string') return error;
+
+    const razorpayError = error.error || (error.response && error.response.data && error.response.data.error);
+    if (razorpayError) {
+        if (typeof razorpayError === 'string') return razorpayError;
+        return razorpayError.message || razorpayError.description || razorpayError.reason || razorpayError.code || 'Refund failed';
+    }
+    if (error.message) return error.message;
+    return 'Refund failed';
+}
+
+function getRazorpayStatusCode(error, fallback = 400) {
+    const statusCode = Number(error && error.statusCode);
+    return Number.isInteger(statusCode) ? statusCode : fallback;
+}
+
+function createRefundRequestId(orderId) {
+    return 'refund_' + crypto.createHash('sha256').update(String(orderId)).digest('hex').slice(0, 24);
+}
+
 async function seedCollection(model, name, documents) {
     if (await model.countDocuments() > 0 || documents.length === 0) return;
     await model.insertMany(documents, { ordered: false });
@@ -219,14 +241,21 @@ app.get('/api/orders/:id/payment-id', asyncRoute(async(req, res) => {
 // Razorpay Refund
 app.post('/api/payment/refund', asyncRoute(async(req, res) => {
     if (!razorpay) return res.status(503).json({ error: 'Razorpay is not configured' });
-    const { orderId, razorpayPaymentId, razorpayOrderId, amount, notes } = req.body;
-    let paymentId = razorpayPaymentId;
 
-    if (!paymentId && razorpayOrderId) {
+    const { orderId, razorpayPaymentId, razorpayOrderId, amount, notes } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+
+    let order = await Order.findOne({ id: orderId });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    let paymentId = order.razorpayPaymentId || razorpayPaymentId;
+    let linkedRazorpayOrderId = order.razorpayOrderId || razorpayOrderId;
+
+    if (!paymentId && linkedRazorpayOrderId) {
         try {
-            const orderInfo = await razorpay.orders.fetch(razorpayOrderId);
-            if (orderInfo.payments && orderInfo.payments.length > 0) {
-                paymentId = orderInfo.payments[0].id;
+            const orderInfo = await razorpay.orders.fetchPayments(linkedRazorpayOrderId);
+            if (orderInfo.items && orderInfo.items.length > 0) {
+                paymentId = orderInfo.items[0].id;
             }
         } catch (err) {
             console.error('Failed to fetch payment from order:', err);
@@ -234,20 +263,133 @@ app.post('/api/payment/refund', asyncRoute(async(req, res) => {
     }
 
     if (!paymentId) return res.status(400).json({ error: 'razorpayPaymentId is required' });
-    if (amount == null || isNaN(amount) || Number(amount) < 1) return res.status(400).json({ error: 'Amount is required and must be at least 1 rupee (100 paise)' });
+    if (order.razorpayPaymentId && paymentId !== order.razorpayPaymentId) {
+        return res.status(400).json({ error: 'Payment ID does not match this order' });
+    }
+
+    if (order.status !== 'cancelled') {
+        return res.status(400).json({ error: 'Order must be cancelled before requesting a refund' });
+    }
+    if (order.payment !== 'razorpay' || order.paymentStatus !== 'paid') {
+        return res.status(400).json({ error: 'Refund is available only for paid Razorpay orders' });
+    }
+
+    if (order.refundStatus === 'pending') {
+        return res.status(409).json({
+            error: 'Refund request is already in progress',
+            refund_status: 'pending',
+            refund_id: order.refundId || null
+        });
+    }
+    if ((order.refundId && order.refundStatus !== 'failed') || ['initiated', 'processed'].includes(order.refundStatus)) {
+        return res.json({
+            status: 'OK',
+            refund_id: order.refundId || null,
+            refund_status: order.refundStatus,
+            amount: order.refundAmount || null,
+            message: 'Refund already ' + order.refundStatus
+        });
+    }
+
+    const orderAmount = Number(order.total ?? (Number(order.subtotal) + Number(order.deliveryCharge ?? 50)));
+    const requestedAmount = amount == null ? orderAmount : Number(amount);
+    if (!Number.isFinite(orderAmount) || orderAmount < 1) {
+        return res.status(400).json({ error: 'Order amount is invalid' });
+    }
+    if (!Number.isFinite(requestedAmount) || requestedAmount < 1 || requestedAmount > orderAmount) {
+        return res.status(400).json({ error: 'Refund amount must be between 1 and the order total' });
+    }
+
+    const claimFilter = {
+        id: orderId,
+        $or: [
+            { refundStatus: { $exists: false }, refundId: { $exists: false } },
+            { refundStatus: { $exists: false }, refundId: null },
+            { refundStatus: '', refundId: { $exists: false } },
+            { refundStatus: '', refundId: null },
+            { refundStatus: 'failed' }
+        ]
+    };
+    const nextRefundAttempts = (order.refundAttempts || 0) + 1;
+    const nextRefundRequestId = createRefundRequestId(order.id + ':' + nextRefundAttempts);
+    const claimedOrder = await Order.findOneAndUpdate(
+        claimFilter,
+        {
+            $set: {
+                refundStatus: 'pending',
+                refundRequestId: nextRefundRequestId,
+                refundAttempts: nextRefundAttempts
+            }
+        },
+        { new: true }
+    );
+
+    if (!claimedOrder) {
+        const currentOrder = await Order.findOne({ id: orderId });
+        if (!currentOrder) return res.status(404).json({ error: 'Order not found' });
+        if (currentOrder.refundStatus === 'pending') {
+            return res.status(409).json({
+                error: 'Refund request is already in progress',
+                refund_status: 'pending',
+                refund_id: currentOrder.refundId || null
+            });
+        }
+        if ((currentOrder.refundId && currentOrder.refundStatus !== 'failed') || ['initiated', 'processed'].includes(currentOrder.refundStatus)) {
+            return res.json({
+                status: 'OK',
+                refund_id: currentOrder.refundId || null,
+                refund_status: currentOrder.refundStatus,
+                amount: currentOrder.refundAmount || null,
+                message: 'Refund already ' + currentOrder.refundStatus
+            });
+        }
+        return res.status(409).json({ error: 'Refund request could not be claimed' });
+    }
+    order = claimedOrder;
 
     const refundData = {
-        amount: Math.round(amount * 100),
-        notes: notes || { order_id: orderId }
+        amount: Math.round(requestedAmount * 100),
+        receipt: order.refundRequestId,
+        notes: notes || { order_id: order.id }
     };
 
+    let refund;
     try {
-        const refund = await razorpay.payments.refund(paymentId, refundData);
-        res.json({ status: 'OK', refund_id: refund.id, amount: refund.amount, message: 'Refund initiated successfully' });
+        refund = await razorpay.payments.refund(paymentId, refundData);
     } catch (err) {
+        const statusCode = getRazorpayStatusCode(err, 400);
+        const isUncertainError = !err.statusCode || statusCode === 409 || statusCode >= 500;
+        if (!isUncertainError) {
+            order.refundStatus = '';
+            await order.save().catch(saveError => console.error('Failed to reset refund status:', saveError.message));
+        }
+
+        const message = getRazorpayErrorMessage(err);
         console.error('Refund error:', err);
-        res.status(400).json({ error: err.message || 'Refund failed' });
+        res.status(statusCode >= 500 ? 500 : statusCode).json({
+            error: message,
+            refund_status: order.refundStatus,
+            razorpayStatus: statusCode
+        });
+        return;
     }
+
+    const refundStatus = refund.status || 'initiated';
+
+    order.razorpayPaymentId = paymentId;
+    if (linkedRazorpayOrderId) order.razorpayOrderId = linkedRazorpayOrderId;
+    order.refundId = refund.id;
+    order.refundStatus = refundStatus;
+    order.refundAmount = requestedAmount;
+    await order.save().catch(saveError => console.error('Failed to save refund status:', saveError.message));
+
+    res.json({
+        status: 'OK',
+        refund_id: refund.id,
+        refund_status: refundStatus,
+        amount: refund.amount,
+        message: refundStatus === 'processed' ? 'Refund processed successfully' : 'Refund initiated successfully'
+    });
 }));
 
 const settingsSchema = new mongoose.Schema({ key: { type: String, unique: true }, value: mongoose.Schema.Types.Mixed });
