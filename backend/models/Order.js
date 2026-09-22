@@ -17,10 +17,14 @@ const orderSchema = new mongoose.Schema({
     razorpayPaymentId: { type: String },
     paymentStatus: { type: String, default: 'pending' },
     refundStatus: { type: String, default: '' },
+<<<<<<< HEAD
     refundId: { type: String },
     refundAmount: { type: Number },
     refundRequestId: { type: String },
     refundAttempts: { type: Number, default: 0 }
+=======
+    refundId: { type: String, default: '' }
+>>>>>>> 4af44fb724a86e1b816e7ca0872b6a74cd3f0190
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);
