@@ -980,8 +980,17 @@ const app = {
           </div>
           <div class="order-footer">
             <span class="order-amount">₹${order.total || order.subtotal + DELIVERY_CHARGE}</span>
-            <div>
+            <div class="order-actions">
               ${canCancel ? `<button class="order-cancel-btn" onclick="event.stopPropagation(); app.cancelOrder('${order.id}')">Cancel Order</button>` : ''}
+              ${(() => {
+                const isRazorpayPaid = order.payment === 'razorpay' && order.paymentStatus === 'paid';
+                if (order.refundStatus === 'refunded')    return `<span class="refund-badge refund-success">✅ Refunded</span>`;
+                if (order.refundStatus === 'processing')  return `<button class="order-refund-btn processing" disabled><span class="refund-spinner"></span> Processing…</button>`;
+                if (order.refundStatus === 'failed')      return `<span class="refund-badge refund-failed">⚠️ Failed</span><button class="order-refund-btn retry" onclick="event.stopPropagation();app.requestRefund('${order.id}')">Retry</button>`;
+                if (order.status === 'cancelled' && isRazorpayPaid && !order.refundStatus)
+                  return `<button class="order-refund-btn" onclick="event.stopPropagation();app.requestRefund('${order.id}')">💸 Request Refund</button>`;
+                return '';
+              })()}
               <button class="order-track-btn" onclick="app.showTracking('${order.id}')">Track Order</button>
             </div>
           </div>
@@ -1007,6 +1016,31 @@ const app = {
     }).catch(err => {
       this.showToast(err.error || 'Failed to cancel order', 'error');
     });
+  },
+
+  async requestRefund(orderId) {
+    const order = this.orders.find(o => o.id == orderId);
+    if (!order) return;
+
+    if (!confirm(`Request a full refund of ₹${order.total} for Order ${orderId}?\n\nThe amount will be credited to your original payment account within 5–7 business days.`)) return;
+
+    // Optimistically show processing in UI right away
+    order.refundStatus = 'processing';
+    this.renderOrders();
+    this.showToast('Processing your refund…', 'info');
+
+    try {
+      const result = await apiCall(`/api/orders/${orderId}/refund`, { method: 'POST' });
+      order.refundStatus = result.refundStatus || 'refunded';
+      order.refundId     = result.refundId || '';
+      this.saveOrders();
+      this.renderOrders();
+      this.showToast(`🎉 Refund of ₹${order.total} initiated successfully! It will reach your account within 5–7 business days.`, 'success');
+    } catch (err) {
+      order.refundStatus = 'failed';
+      this.renderOrders();
+      this.showToast(err.error || 'Refund failed. Please try again or contact support.', 'error');
+    }
   },
 
   showTracking(orderId) {
@@ -1472,3 +1506,235 @@ const app = {
 document.addEventListener('DOMContentLoaded', async () => {
   await app.init();
 });
+
+// ─── DIALOGFLOW CHATBOT — ORDER STATUS & CHIPS INTEGRATION ───────────────────
+// Intercepts chip clicks, fetches exact order status from DB, renders a rich
+// card and then shows a greeting with chips again — no Dialogflow backend needed.
+(function initDialogflowBotIntegration() {
+  let isHandlingCustomChat = false;
+  let customChatTimeout    = null;
+
+  function setHandlingFlag() {
+    isHandlingCustomChat = true;
+    if (customChatTimeout) clearTimeout(customChatTimeout);
+    customChatTimeout = setTimeout(() => { isHandlingCustomChat = false; }, 4000);
+  }
+
+  // ── Greeting chips ──────────────────────────────────────────────────────────
+  function buildGreetingChips(extraChips = []) {
+    const base = [
+      { text: 'Track another order' },
+      { text: 'My Orders' },
+      { text: 'Veg Pickles' },
+      { text: 'Non Veg Pickles' },
+      { text: 'Help & Support' }
+    ];
+    const result = [...extraChips];
+    for (const b of base) {
+      if (!result.some(u => u.text.toLowerCase() === b.text.toLowerCase())) result.push(b);
+    }
+    return result.slice(0, 5);
+  }
+
+  function renderGreetingWithChips(dfMessenger, extraChips = []) {
+    if (!dfMessenger || typeof dfMessenger.renderCustomCard !== 'function') return;
+    dfMessenger.renderCustomCard([
+      {
+        type: 'description',
+        title: '👋 Hello! How else can I help you today?',
+        text: ['Choose an option below or type your Order ID:']
+      },
+      { type: 'chips', options: buildGreetingChips(extraChips) }
+    ]);
+  }
+
+  // ── Order status card ───────────────────────────────────────────────────────
+  function renderOrderStatusCard(dfMessenger, order) {
+    if (!dfMessenger || typeof dfMessenger.renderCustomCard !== 'function') return;
+
+    const statusUpper = (order.status || 'PENDING').toUpperCase();
+    const icons = { PENDING:'⏳', APPROVED:'✅', CONFIRMED:'✅', PROCESSING:'🍳', SHIPPED:'🚚', DELIVERED:'🎉', CANCELLED:'❌' };
+    const icon  = icons[statusUpper] || '📦';
+
+    const itemsSummary = (order.items && order.items.length)
+      ? order.items.map(i => `${i.name || 'Pickle'} (${i.size || 'Std'}) ×${i.quantity || 1}`).join(', ')
+      : 'Pickle jars';
+
+    const firstImage = (order.items && order.items[0] &&
+      (order.items[0].image || (order.items[0].images && order.items[0].images[0]))) ||
+      'https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80';
+
+    const dateStr = order.date
+      ? new Date(order.date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })
+      : 'Recent';
+
+    dfMessenger.renderCustomCard([
+      {
+        type: 'info',
+        title: `Order #${order.id}`,
+        subtitle: `${icon} Live DB Status: ${statusUpper} | Total: ₹${order.total || order.subtotal || 0}`,
+        image: { src: { rawUrl: firstImage } }
+      },
+      {
+        type: 'description',
+        title: '📦 Order Details (from Database)',
+        text: [
+          `Exact DB Status: ${statusUpper}`,
+          `Placed: ${dateStr}`,
+          `Items: ${itemsSummary}`,
+          `Payment: ${(order.payment || 'COD').toUpperCase()} (${(order.paymentStatus || 'Pending').toUpperCase()})`,
+          order.trackingNumber
+            ? `Tracking No: ${order.trackingNumber}`
+            : 'Tracking: Preparing your order',
+          order.deliveryDate
+            ? `Expected Delivery: ${new Date(order.deliveryDate).toLocaleDateString('en-IN')}`
+            : ''
+        ].filter(Boolean)
+      }
+    ]);
+  }
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  async function handleOrderLookup(dfMessenger, orderId) {
+    setHandlingFlag();
+    try {
+      const order = await apiCall(`/api/orders/${encodeURIComponent(orderId)}`);
+      if (order && order.id) {
+        renderOrderStatusCard(dfMessenger, order);
+      } else {
+        throw new Error('not found');
+      }
+    } catch (_) {
+      dfMessenger.renderCustomCard([{
+        type: 'description',
+        title: 'Order Not Found',
+        text: [`Could not find order "${orderId}" in our database. Please check the Order ID and try again.`]
+      }]);
+    }
+    setTimeout(() => renderGreetingWithChips(dfMessenger), 700);
+  }
+
+  async function handleMyOrders(dfMessenger) {
+    setHandlingFlag();
+    try {
+      let orders = [];
+      if (app.user && app.user.email) {
+        orders = await apiCall(`/api/orders?userId=${encodeURIComponent(app.user.email)}`);
+      }
+      if (!orders || !orders.length) orders = await apiCall('/api/orders');
+
+      if (orders && orders.length) {
+        renderOrderStatusCard(dfMessenger, orders[0]);
+        const otherChips = orders.slice(1, 4).map(o => ({ text: `Order #${o.id}` }));
+        setTimeout(() => renderGreetingWithChips(dfMessenger, otherChips), 700);
+      } else {
+        dfMessenger.renderCustomCard([{
+          type: 'description',
+          title: '📦 No Orders Found',
+          text: ['No orders were found in the database. Please provide your Order ID (e.g. ORD12345678) to track it.']
+        }]);
+        setTimeout(() => renderGreetingWithChips(dfMessenger), 700);
+      }
+    } catch (_) {
+      renderGreetingWithChips(dfMessenger);
+    }
+  }
+
+  function handleCategory(dfMessenger, category) {
+    setHandlingFlag();
+    if ((category === 'Veg' || category === 'Non Veg') && typeof app.filterCategory === 'function') {
+      app.filterCategory(category);
+    }
+    const desc = category === 'Veg'
+      ? 'Our vegetarian pickles: Mango, Garlic, Lemon, Gongura, Tomato, Ginger and Mixed Veg — sun-dried spices, traditional recipes.'
+      : category === 'Non Veg'
+      ? 'Our non-veg pickles: Chicken, Boneless Mutton, Prawns and Fish — prepared fresh using authentic family recipes.'
+      : 'Explore our full range of homemade Andhra pickles!';
+    dfMessenger.renderCustomCard([{ type: 'description', title: `🫙 ${category} Pickles`, text: [desc] }]);
+    setTimeout(() => renderGreetingWithChips(dfMessenger), 700);
+  }
+
+  function handleSupport(dfMessenger) {
+    setHandlingFlag();
+    dfMessenger.renderCustomCard([{
+      type: 'description',
+      title: '📞 Customer Support',
+      text: [
+        'We are here to help!',
+        '• Phone / WhatsApp: +91 98765 43210',
+        '• Email: support@mahipickles.com',
+        '• Hours: Mon–Sat, 9:00 AM – 8:00 PM IST',
+        '• Shipping: Delivery across all pincodes in India'
+      ]
+    }]);
+    setTimeout(() => renderGreetingWithChips(dfMessenger), 700);
+  }
+
+  // ── Setup ───────────────────────────────────────────────────────────────────
+  function setupMessenger(dfMessenger) {
+    if (!dfMessenger || dfMessenger._botInitialized) return;
+    dfMessenger._botInitialized = true;
+
+    // Chip clicks
+    dfMessenger.addEventListener('df-chip-clicked', async (event) => {
+      const chipText = ((event.detail && (event.detail.text || event.detail.query)) || '').trim();
+      if (!chipText) return;
+
+      const orderMatch = chipText.match(/ORD[\w\d\-]+/i);
+      const lower      = chipText.toLowerCase();
+
+      if (orderMatch) {
+        await handleOrderLookup(dfMessenger, orderMatch[0]);
+      } else if (lower.includes('track') || lower.includes('status') || lower.includes('order')) {
+        await handleMyOrders(dfMessenger);
+      } else if (lower.includes('non veg') || lower.includes('non-veg')) {
+        handleCategory(dfMessenger, 'Non Veg');
+      } else if (lower.includes('veg')) {
+        handleCategory(dfMessenger, 'Veg');
+      } else if (lower.includes('browse') || lower.includes('pickle')) {
+        handleCategory(dfMessenger, 'Browse');
+      } else if (lower.includes('help') || lower.includes('support') || lower.includes('contact')) {
+        handleSupport(dfMessenger);
+      } else {
+        setTimeout(() => renderGreetingWithChips(dfMessenger), 500);
+      }
+    });
+
+    // Typed order IDs
+    dfMessenger.addEventListener('df-user-input-entered', async (event) => {
+      const input      = ((event.detail && (event.detail.input || event.detail.value)) || '').trim();
+      const orderMatch = input.match(/ORD[\w\d\-]+/i);
+      if (orderMatch) {
+        setHandlingFlag();
+        await handleOrderLookup(dfMessenger, orderMatch[0]);
+      }
+    });
+
+    // Suppress the Dialogflow fallback response when we handled it ourselves
+    window.addEventListener('df-response-received', (event) => {
+      if (isHandlingCustomChat) {
+        event.preventDefault();
+        isHandlingCustomChat = false;
+      }
+    });
+
+    // Initial greeting chips (1.8 s delay so welcome message loads first)
+    setTimeout(() => {
+      if (typeof dfMessenger.renderCustomCard !== 'function') return;
+      const initialChips = (app.orders && app.orders.length)
+        ? [{ text: `Order #${app.orders[0].id}` }]
+        : [];
+      renderGreetingWithChips(dfMessenger, initialChips);
+    }, 1800);
+  }
+
+  window.addEventListener('df-messenger-loaded', () => {
+    const el = document.querySelector('df-messenger');
+    if (el) setupMessenger(el);
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.querySelector('df-messenger');
+    if (el) setupMessenger(el);
+  });
+})();

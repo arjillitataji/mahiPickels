@@ -8,8 +8,8 @@
 }
 
 body {
-    background-color: #f5f5f6;
-    color: #212121;
+    background-color: #faf8f5;
+    color: #3d3226;
     min-height: 100vh;
 }
 
@@ -1182,41 +1182,59 @@ body.login-mode main {
     gap: 8px;
 }
 
+.product-weights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.weight-tag {
+    display: inline-block;
+    background: #f8f0e7;
+    color: var(--rust-dark);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--line);
+}
+
+.weight-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .size-btn {
-    padding: 8px 16px;
-    border: 1px solid #d4d4d4;
-    background: #fff;
+    padding: 10px 18px;
+    border: 1px solid var(--line);
+    background: var(--surface);
     border-radius: 4px;
     font-weight: 500;
     font-size: 0.85rem;
     transition: all 0.2s;
+    cursor: pointer;
 }
 
 .size-btn:hover,
 .size-btn.selected {
-    border-color: #2874f0;
-    color: #2874f0;
-    background: #f0f7ff;
+    border-color: var(--rust);
+    color: var(--rust);
+    background: #f8e9e2;
+}
+
+.selected-price-detail {
+    display: none;
+    margin: 16px 0;
+    padding: 12px;
+    background: #f8f0e7;
+    border-radius: 4px;
 }
 
 .color-options {
     display: flex;
     gap: 10px;
-}
-
-.color-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 1px #d4d4d4;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.color-btn:hover,
-.color-btn.selected {
-    box-shadow: 0 0 0 2px #2874f0;
 }
 
 .detail-actions {
@@ -1629,6 +1647,83 @@ body.login-mode main {
 .order-cancel-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.order-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.order-refund-btn {
+    padding: 8px 14px;
+    background: #fff;
+    color: #e65100;
+    border: 1.5px solid #e65100;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.order-refund-btn:hover:not(:disabled) {
+    background: #fff3e0;
+}
+
+.order-refund-btn.processing {
+    background: #fff8e1;
+    color: #f57f17;
+    border-color: #f57f17;
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.order-refund-btn.retry {
+    border-color: #c62828;
+    color: #c62828;
+    font-size: 0.78rem;
+    padding: 6px 10px;
+}
+
+.refund-spinner {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    border: 2px solid #f57f17;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: refund-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes refund-spin {
+    to { transform: rotate(360deg); }
+}
+
+.refund-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.refund-badge.refund-success {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.refund-badge.refund-failed {
+    background: #ffebee;
+    color: #c62828;
+    margin-right: 4px;
 }
 
 
@@ -2330,6 +2425,10 @@ body.login-mode main {
     background: #d32f2f;
 }
 
+.toast.info {
+    background: #1565c0;
+}
+
 @keyframes toastIn {
     from {
         transform: translateX(100%);
@@ -2501,19 +2600,19 @@ body.login-mode main {
 }
 
 
-/* --- VASTRAKART FASHION THEME --- */
+/* --- MAHI HOME PICKLES THEME --- */
 
 :root {
-    --ink: #242320;
-    --muted: #766f65;
-    --paper: #f5f1ea;
+    --ink: #3d3226;
+    --muted: #8a7d6e;
+    --paper: #faf8f5;
     --surface: #fffdf9;
-    --line: #e4ddd2;
-    --rust: #b34d31;
-    --rust-dark: #8e3925;
-    --moss: #607258;
-    --gold: #c4914d;
-    --shadow: 0 14px 35px rgba(54, 42, 29, 0.09);
+    --line: #e8e0d5;
+    --rust: #c85a16;
+    --rust-dark: #a04810;
+    --moss: #5a8a3a;
+    --gold: #d4a017;
+    --shadow: 0 14px 35px rgba(61, 50, 38, 0.09);
 }
 
 * {
@@ -3338,3 +3437,17 @@ body {
         line-height: 1.5;
     }
 }
+
+/* --- DIALOGFLOW MESSENGER --- */
+df-messenger {
+    --df-messenger-button-titlebar-color: #2874f0;
+    --df-messenger-send-icon: #2874f0;
+    --df-messenger-user-message: #e8f0fe;
+    z-index: 2500;
+}
+
+@media (max-width: 768px) {
+    df-messenger {
+        bottom: 68px;
+    }
+}

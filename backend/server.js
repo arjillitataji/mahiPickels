@@ -124,7 +124,7 @@ app.get('/api/orders', asyncRoute(async(req, res) => {
 }));
 
 app.get('/api/orders/:id', asyncRoute(async(req, res) => {
-    const order = await Order.findOne({ id: req.params.id });
+    const order = await Order.findOne({ id: { $regex: new RegExp(`^${req.params.id}$`, 'i') } });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json(serialize(order));
 }));
@@ -136,7 +136,7 @@ app.post('/api/orders', asyncRoute(async(req, res) => {
 }));
 
 app.put('/api/orders/:id', asyncRoute(async(req, res) => {
-    const order = await Order.findOne({ id: req.params.id });
+    const order = await Order.findOne({ id: { $regex: new RegExp(`^${req.params.id}$`, 'i') } });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (req.body.status === 'cancelled' && ['shipped', 'delivered', 'cancelled'].includes(order.status)) return res.status(400).json({ error: 'Order cannot be cancelled' });
     Object.assign(order, req.body);
@@ -145,12 +145,222 @@ app.put('/api/orders/:id', asyncRoute(async(req, res) => {
 }));
 
 app.delete('/api/orders/:id', asyncRoute(async(req, res) => {
-    const order = await Order.findOne({ id: req.params.id });
+    const order = await Order.findOne({ id: { $regex: new RegExp(`^${req.params.id}$`, 'i') } });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (['shipped', 'delivered', 'cancelled'].includes(order.status)) return res.status(400).json({ error: 'Order cannot be cancelled' });
     order.status = 'cancelled';
     await order.save();
     res.json({ success: true, message: 'Order cancelled successfully' });
+}));
+
+// Auto-refund — triggers Razorpay refund for cancelled Razorpay-paid orders, no admin needed
+app.post('/api/orders/:id/refund', asyncRoute(async(req, res) => {
+    if (!razorpay) return res.status(503).json({ error: 'Razorpay is not configured on this server' });
+
+    const order = await Order.findOne({ id: { $regex: new RegExp(`^${req.params.id}$`, 'i') } });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    // Guard: only cancelled Razorpay-paid orders qualify
+    if (order.status !== 'cancelled') {
+        return res.status(400).json({ error: 'Refund is only available for cancelled orders' });
+    }
+    if (order.payment !== 'razorpay') {
+        return res.status(400).json({ error: 'Refund is only available for Razorpay payments (not COD)' });
+    }
+    if (order.paymentStatus !== 'paid') {
+        return res.status(400).json({ error: 'Payment was not completed — no refund needed' });
+    }
+    if (order.refundStatus === 'refunded') {
+        return res.status(400).json({ error: 'This order has already been refunded' });
+    }
+    if (order.refundStatus === 'processing') {
+        return res.status(400).json({ error: 'Refund is already being processed' });
+    }
+
+    // Look up the Razorpay payment ID from the Payment collection
+    const paymentRecord = await Payment.findOne({ orderId: order.id });
+    if (!paymentRecord || !paymentRecord.razorpayPaymentId) {
+        return res.status(400).json({ error: 'Razorpay payment record not found — cannot initiate refund' });
+    }
+
+    // Mark processing in DB before calling Razorpay
+    order.refundStatus = 'processing';
+    await order.save();
+
+    try {
+        const refundAmount = Math.round((order.total || order.subtotal || 0) * 100); // paise
+        const refund = await razorpay.payments.refund(paymentRecord.razorpayPaymentId, {
+            amount: refundAmount,
+            speed: 'normal',
+            notes: { reason: 'Customer requested cancellation refund', orderId: order.id }
+        });
+
+        // Refund success — update order and payment records
+        order.refundStatus = 'refunded';
+        order.refundId = refund.id;
+        await order.save();
+
+        await Payment.findOneAndUpdate(
+            { orderId: order.id },
+            { $set: { status: 'refunded', refundId: refund.id } }
+        );
+
+        return res.json({
+            success: true,
+            message: 'Refund processed successfully',
+            refundId: refund.id,
+            amount: order.total,
+            refundStatus: 'refunded'
+        });
+    } catch (err) {
+        // Razorpay call failed — mark as failed in DB
+        order.refundStatus = 'failed';
+        await order.save();
+        console.error('Razorpay refund error:', err);
+        return res.status(500).json({
+            error: err.error && err.error.description ? err.error.description : 'Refund failed. Please try again or contact support.'
+        });
+    }
+}));
+
+// Dialogflow Webhook Fulfillment (Retrieves exact order status from DB and returns greeting with chips)
+app.post('/api/dialogflow/webhook', asyncRoute(async(req, res) => {
+    const queryResult = (req.body && req.body.queryResult) || {};
+    const params = queryResult.parameters || {};
+    const queryText = (queryResult.queryText || '').trim();
+
+    let orderId = params.orderId || params.order_id || params['order-id'] || '';
+    if (!orderId) {
+        const match = queryText.match(/ORD[\w\d\-]+/i);
+        if (match) orderId = match[0];
+    }
+
+    if (orderId) {
+        const order = await Order.findOne({ id: { $regex: new RegExp(`^${orderId}$`, 'i') } });
+        if (order) {
+            const itemsList = (order.items || []).map(i => `${i.name || 'Pickle'} (x${i.quantity || 1})`).join(', ') || 'Pickle jars';
+            const statusUpper = (order.status || 'PENDING').toUpperCase();
+            const dateStr = order.date ? new Date(order.date).toLocaleDateString('en-IN') : 'Recent';
+
+            return res.json({
+                fulfillmentMessages: [
+                    {
+                        payload: {
+                            richContent: [
+                                [
+                                    {
+                                        type: "info",
+                                        title: `Order #${order.id}`,
+                                        subtitle: `Status: ${statusUpper} | Total: ₹${order.total || order.subtotal || 0}`,
+                                        image: {
+                                            src: {
+                                                rawUrl: (order.items && order.items[0] && (order.items[0].image || (order.items[0].images && order.items[0].images[0]))) ||
+                                                    'https://images.unsplash.com/photo-1565299556905-4d5b6c7a1b9c?w=500&q=80'
+                                            }
+                                        }
+                                    },
+                                    {
+                                        type: "description",
+                                        title: "📦 Order Details (From Database)",
+                                        text: [
+                                            `Exact DB Status: ${statusUpper}`,
+                                            `Placed Date: ${dateStr}`,
+                                            `Items: ${itemsList}`,
+                                            `Payment: ${(order.payment || 'COD').toUpperCase()} (${(order.paymentStatus || 'Pending').toUpperCase()})`,
+                                            order.trackingNumber ? `Tracking No: ${order.trackingNumber}` : 'Tracking: Standard Processing'
+                                        ]
+                                    }
+                                ],
+                                [
+                                    {
+                                        type: "description",
+                                        title: "👋 Hello! How else can I help you today?",
+                                        text: ["Choose an option below:"]
+                                    },
+                                    {
+                                        type: "chips",
+                                        options: [
+                                            { text: "Track another order" },
+                                            { text: "My Orders" },
+                                            { text: "Veg Pickles" },
+                                            { text: "Non Veg Pickles" },
+                                            { text: "Help & Support" }
+                                        ]
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            });
+        } else {
+            return res.json({
+                fulfillmentMessages: [
+                    {
+                        payload: {
+                            richContent: [
+                                [
+                                    {
+                                        type: "description",
+                                        title: "Order Not Found",
+                                        text: [`We could not find an order with ID "${orderId}" in our database.`]
+                                    }
+                                ],
+                                [
+                                    {
+                                        type: "description",
+                                        title: "👋 Hello! How can I help you?",
+                                        text: ["Please verify your order ID or select an option below:"]
+                                    },
+                                    {
+                                        type: "chips",
+                                        options: [
+                                            { text: "Track Order" },
+                                            { text: "My Orders" },
+                                            { text: "Browse Pickles" },
+                                            { text: "Help & Support" }
+                                        ]
+                                    }
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            });
+        }
+    }
+
+    // Default response: Greeting with chips
+    const recentOrders = await Order.find().sort({ createdAt: -1, date: -1 }).limit(3);
+    const orderChips = recentOrders.map(o => ({ text: `Order #${o.id}` }));
+    const defaultChips = [
+        ...orderChips,
+        { text: "Track Order" },
+        { text: "Browse Pickles" },
+        { text: "Help & Support" }
+    ].slice(0, 5);
+
+    res.json({
+        fulfillmentMessages: [
+            {
+                payload: {
+                    richContent: [
+                        [
+                            {
+                                type: "description",
+                                title: "👋 Welcome to Mahi Home Pickles!",
+                                text: ["Click any chip below to check your live order status or explore our products:"]
+                            },
+                            {
+                                type: "chips",
+                                options: defaultChips
+                            }
+                        ]
+                    ]
+                }
+            }
+        ]
+    });
 }));
 
 // Users
@@ -207,7 +417,7 @@ const Counter = mongoose.model('Counter', counterSchema);
 
 app.get('/api/settings', requireAdmin, asyncRoute(async(req, res) => {
     const setting = await Settings.findOne({ key: 'store' });
-    res.json((setting && setting.value) || { storeName: 'VastraKart', email: 'support@vastrakart.com', currency: '₹' });
+    res.json((setting && setting.value) || { storeName: 'Mahi Home Pickles', email: 'support@mahipickles.com', currency: '₹' });
 }));
 app.put('/api/settings', requireAdmin, asyncRoute(async(req, res) => {
     await Settings.findOneAndUpdate({ key: 'store' }, { key: 'store', value: req.body }, { upsert: true, new: true });
@@ -231,7 +441,7 @@ async function start() {
     if (!MONGODB_URI) throw new Error('MONGODB_URI or MONGODB_URI_DIRECT is required');
     await mongoose.connect(MONGODB_URI);
     await seedDatabase();
-    app.listen(PORT, () => console.log(`VastraKart backend running on port ${PORT} with MongoDB`));
+    app.listen(PORT, () => console.log(`Mahi Home Pickles backend running on port ${PORT} with MongoDB`));
 }
 
 start().catch(error => {

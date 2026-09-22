@@ -1,7 +1,7 @@
 {
-  "name": "demo-selling",
+  "name": "mahi-home-pickles",
   "version": "1.0.0",
-  "description": "A professional clothing e-commerce platform with separate user and admin portals.",
+  "description": "A professional homemade pickle e-commerce platform with separate user and admin portals.",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

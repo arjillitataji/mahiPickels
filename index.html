@@ -18,7 +18,7 @@
                     <span class="logo-icon">🫙</span> Mahi Home Pickles
                 </a>
                 <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Search for clothes, fashion and more...">
+                    <input type="text" id="search-input" placeholder="Search for pickles, mango, garlic, fish...">
                     <button onclick="app.search()">Search</button>
                 </div>
                 <div class="header-actions">
@@ -105,36 +105,36 @@
             <section class="landing-page">
                 <div class="landing-image"></div>
                 <div class="landing-content">
-                    <p class="landing-kicker">VASTRAKART / 2025 COLLECTION</p>
-                    <h1>Wear the<br><em>unspoken.</em></h1>
-                    <p class="landing-copy">Quiet confidence, considered silhouettes, and pieces made to stay with you.</p>
+                    <p class="landing-kicker">MAHI HOME PICKLES / HOMEMADE</p>
+                    <h1>Taste of<br><em>Home.</em></h1>
+                    <p class="landing-copy">Traditional homemade pickles made with love, sun-dried spices, and the finest ingredients.</p>
                     <div class="landing-actions">
                         <button class="landing-primary" onclick="app.setLoginTab(document.querySelector('.login-tab'), 'register'); app.navigate('login')">Create an account</button>
                         <button class="landing-secondary" onclick="app.navigate('login')">Sign in <span aria-hidden="true">&rarr;</span></button>
                     </div>
-                    <div class="landing-note"><span></span> A slower approach to getting dressed</div>
+                    <div class="landing-note"><span></span> Slow-crafted, small-batch pickles</div>
                 </div>
             </section>
-            <section class="landing-highlights" aria-label="VastraKart highlights">
+            <section class="landing-highlights" aria-label="Mahi Home Pickles highlights">
                 <div class="landing-highlight">
                     <span class="highlight-number">01</span>
                     <div>
-                        <h2>Curated edits</h2>
-                        <p>Thoughtful pieces for every version of you.</p>
+                        <h2>Homemade Taste</h2>
+                        <p>Traditional recipes crafted in small batches.</p>
                     </div>
                 </div>
                 <div class="landing-highlight">
                     <span class="highlight-number">02</span>
                     <div>
-                        <h2>Made to arrive</h2>
-                        <p>Reliable delivery, carefully packed and tracked.</p>
+                        <h2>Fresh &amp; Natural</h2>
+                        <p>No preservatives, just pure homemade goodness.</p>
                     </div>
                 </div>
                 <div class="landing-highlight">
                     <span class="highlight-number">03</span>
                     <div>
-                        <h2>Easy by design</h2>
-                        <p>Simple checkout with secure online payments.</p>
+                        <h2>Easy Delivery</h2>
+                        <p>Secure packaging and reliable delivery to your door.</p>
                     </div>
                 </div>
             </section>
@@ -193,23 +193,23 @@
                 <div class="hero-slider">
                     <div class="hero-slide active">
                         <div class="hero-content">
-                            <h1>Summer Sale 2025</h1>
-                            <p>Up to 70% Off on Top Brands</p>
-                            <button class="cta-btn" onclick="app.filterCategory('Casual')">Shop Now</button>
+                            <h1>Handcrafted Pickles</h1>
+                            <p>Traditional homemade taste in every bite</p>
+                            <button class="cta-btn" onclick="app.filterCategory('Veg')">Shop Veg Pickles</button>
                         </div>
                     </div>
                     <div class="hero-slide">
                         <div class="hero-content">
-                            <h1>New Arrivals</h1>
-                            <p>Discover Latest Trends</p>
-                            <button class="cta-btn" onclick="app.filterCategory('Women')">Explore</button>
+                            <h1>Non Veg Pickles</h1>
+                            <p>Spicy, tangy, and rich homemade delicacies</p>
+                            <button class="cta-btn" onclick="app.filterCategory('Non Veg')">Explore Non Veg</button>
                         </div>
                     </div>
                     <div class="hero-slide">
                         <div class="hero-content">
-                            <h1>Ethnic Elegance</h1>
-                            <p>Traditional Meets Modern</p>
-                            <button class="cta-btn" onclick="app.filterCategory('Ethnic')">View Collection</button>
+                            <h1>Small Batch Goodness</h1>
+                            <p>Made with love, sun-dried spices, and no preservatives</p>
+                            <button class="cta-btn" onclick="app.navigate('home')">Shop All</button>
                         </div>
                     </div>
                 </div>
@@ -228,47 +228,27 @@
                             <label>Category:</label>
                             <select id="filter-category" onchange="app.applyFilters()">
                 <option value="all">All</option>
-                <option value="Men">Men</option>
-                <option value="Women">Women</option>
-                <option value="Kids">Kids</option>
-                <option value="Ethnic">Ethnic Wear</option>
-                <option value="Formal">Formal</option>
-                <option value="Casual">Casual</option>
-                <option value="Winter">Winter Wear</option>
-                <option value="Sportswear">Sportswear</option>
+                <option value="Veg">Veg Pickles</option>
+                <option value="Non Veg">Non Veg Pickles</option>
               </select>
                         </div>
                         <div class="filter-group">
-                            <label>Size:</label>
-                            <select id="filter-size" onchange="app.applyFilters()">
-                <option value="all">All</option>
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
-                <option value="XXL">XXL</option>
-              </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>Color:</label>
-                            <select id="filter-color" onchange="app.applyFilters()">
-                <option value="all">All</option>
-                <option value="Red">Red</option>
-                <option value="Blue">Blue</option>
-                <option value="Black">Black</option>
-                <option value="White">White</option>
-                <option value="Green">Green</option>
-                <option value="Yellow">Yellow</option>
+                            <label>Weight:</label>
+                            <select id="filter-weight" onchange="app.applyFilters()">
+                <option value="all">All Weights</option>
+                <option value="250g">250g</option>
+                <option value="500g">500g</option>
+                <option value="1kg">1kg</option>
               </select>
                         </div>
                         <div class="filter-group">
                             <label>Price:</label>
                             <select id="filter-price" onchange="app.applyFilters()">
                 <option value="all">All</option>
-                <option value="0-500">Under ₹500</option>
-                <option value="500-1000">₹500 - ₹1000</option>
-                <option value="1000-2000">₹1000 - ₹2000</option>
-                <option value="2000+">Above ₹2000</option>
+                <option value="0-200">Under ₹200</option>
+                <option value="200-400">₹200 - ₹400</option>
+                <option value="400-600">₹400 - ₹600</option>
+                <option value="600+">Above ₹600</option>
               </select>
                         </div>
                         <div class="filter-group">
@@ -289,7 +269,7 @@
             <section class="products-section">
                 <div class="container">
                     <div class="section-header">
-                        <h2>Latest Fashion</h2>
+                        <h2>Latest Pickles</h2>
                         <div class="view-toggle">
                             <button class="view-btn active" onclick="app.setView('grid')">⊞</button>
                             <button class="view-btn" onclick="app.setView('list')">☰</button>
@@ -458,8 +438,8 @@
         <div class="container footer-content">
             <div class="footer-grid">
                 <div class="footer-col">
-                    <h4>ABOUT Vastrakart</h4>
-                    <p>India's fashion destination for the latest trends at best prices. Shop from a wide range of clothing for men, women, and kids.</p>
+                    <h4>ABOUT MAHI HOME PICKLES</h4>
+                    <p>India's homemade pickle destination. Traditional recipes, sun-dried spices, and the finest ingredients in every jar.</p>
                 </div>
                 <div class="footer-col">
                     <h4>HELP</h4>
@@ -473,10 +453,8 @@
                 <div class="footer-col">
                     <h4>SHOP BY</h4>
                     <ul>
-                        <li><a href="#" onclick="app.filterCategory('Men'); return false;">Men</a></li>
-                        <li><a href="#" onclick="app.filterCategory('Women'); return false;">Women</a></li>
-                        <li><a href="#" onclick="app.filterCategory('Kids'); return false;">Kids</a></li>
-                        <li><a href="#" onclick="app.filterCategory('Ethnic'); return false;">Ethnic Wear</a></li>
+                        <li><a href="#" onclick="app.filterCategory('Veg'); return false;">Veg Pickles</a></li>
+                        <li><a href="#" onclick="app.filterCategory('Non Veg'); return false;">Non Veg Pickles</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
@@ -490,7 +468,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>© 2025 VastraKart. All rights reserved.</p>
+                <p>© 2025 Mahi Home Pickles. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -512,6 +490,15 @@
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <script src="app.js"></script>
+
+    <!-- Dialogflow Messenger Chatbot -->
+    <script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+    <df-messenger
+      intent="WELCOME"
+      chat-title="MahiPickles"
+      agent-id="21485532-743b-43bf-9c6c-e6eadce6c966"
+      language-code="en"
+    ></df-messenger>
 </body>
 
 </html>

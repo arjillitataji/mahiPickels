@@ -1,6 +1,6 @@
-# VastraKart - Clothing E-Commerce Platform
+# Mahi Home Pickles - Homemade Pickles E-Commerce Platform
 
-A professional clothing e-commerce platform with separate user and admin portals.
+A professional homemade pickle e-commerce platform with separate user and admin portals.
 
 ## Project Structure
 
@@ -84,10 +84,10 @@ If you want to deploy the admin panel separately on Netlify:
 
 ### User Portal
 
-- Browse products by category (Men, Women, Kids, Ethnic, Formal, Casual, Winter, Sportswear)
-- Search products
-- Filter by size, color, price
-- View product details with multiple angle images
+- Browse pickles by category (Veg Pickles, Non Veg Pickles)
+- Search pickles
+- Filter by weight and price
+- View product details with multiple images
 - Add to cart / wishlist
 - Checkout with address and payment
 - Order tracking
@@ -165,5 +165,3 @@ window.ADMIN_API_BASE = "http://localhost:10000";
 - For production, consider replacing JSON file storage with a proper database (PostgreSQL, MongoDB)
 - Image uploads via base64 work for demo; for production use cloud storage (S3, Cloudinary)
 - The free Render tier may sleep after inactivity; first request may be slow
-
-# demo-selling

@@ -211,13 +211,13 @@ const admin = {
 
         getOrderItemDetails(order) {
             return (order.items || []).map(item =>
-                `${item.name || 'Product'} (Size: ${item.size || item.selectedSize || 'Not selected'}, Color: ${item.color || item.selectedColor || 'Not selected'})`
+                `${item.name || 'Product'} (Weight: ${item.size || item.selectedSize || 'Not selected'})`
             ).join('<br>') || 'No items';
         },
 
         renderCharts() {
             this.drawBarChart('revenueChart', [12000, 19000, 3000, 5000, 2000, 3000], ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']);
-            this.drawPieChart('categoryChart', [30, 25, 20, 15, 10], ['Men', 'Women', 'Kids', 'Ethnic', 'Other']);
+            this.drawPieChart('categoryChart', [60, 40], ['Veg Pickles', 'Non Veg Pickles']);
         },
 
         drawBarChart(canvasId, data, labels) {
@@ -300,18 +300,21 @@ const admin = {
             if (!tbody) return;
 
             if (this.products.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No products yet. Add your first product!</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No products yet. Add your first product!</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = this.products.map(product => `
+            tbody.innerHTML = this.products.map(product => {
+            const minPrice = product.weightPrices && product.weightPrices.length > 0
+                ? Math.min(...product.weightPrices.map(w => w.price))
+                : (product.price || 0);
+            return `
       <tr>
         <td><img src="${product.images[0]}" alt="${product.name}" class="product-thumb"></td>
         <td>${product.name}</td>
         <td>${product.category}</td>
-        <td>₹${product.price}</td>
+        <td>From ₹${minPrice}</td>
         <td>${product.sizes?.join(', ') || '-'}</td>
-        <td>${product.colors?.join(', ') || '-'}</td>
         <td>★ ${product.rating}</td>
         <td>
           <div class="action-btns">
@@ -320,7 +323,8 @@ const admin = {
           </div>
         </td>
       </tr>
-    `).join('');
+    `;
+        }).join('');
         },
 
         showAddProductModal() {
@@ -337,9 +341,9 @@ const admin = {
             document.getElementById('prod-id').value = product.id;
             document.getElementById('prod-name').value = product.name;
             document.getElementById('prod-category').value = product.category;
-            document.getElementById('prod-price').value = product.price;
             document.getElementById('prod-sizes').value = (product.sizes && product.sizes.join(', ')) || '';
-            document.getElementById('prod-colors').value = (product.colors && product.colors.join(', ')) || '';
+            const weightPrices = product.weightPrices || [];
+            document.getElementById('prod-weight-prices').value = weightPrices.map(w => `${w.size}:${w.price}:${w.mrp}`).join('\n') || '';
             document.getElementById('prod-brand').value = product.brand || '';
             document.getElementById('prod-description').value = product.description || '';
             document.getElementById('prod-image').value = product.images[0] || '';
@@ -397,9 +401,15 @@ const admin = {
             const id = document.getElementById('prod-id').value;
             const name = document.getElementById('prod-name').value;
             const category = document.getElementById('prod-category').value;
-            const price = Number(document.getElementById('prod-price').value);
             const sizes = document.getElementById('prod-sizes').value.split(',').map(s => s.trim()).filter(Boolean);
-            const colors = document.getElementById('prod-colors').value.split(',').map(s => s.trim()).filter(Boolean);
+            const weightPricesText = document.getElementById('prod-weight-prices').value;
+            const weightPrices = weightPricesText.split('\n').map(line => {
+                const parts = line.split(':').map(s => s.trim());
+                if (parts.length >= 3 && parts[0] && parts[1] && parts[2]) {
+                    return { size: parts[0], price: Number(parts[1]), mrp: Number(parts[2]) };
+                }
+                return null;
+            }).filter(Boolean);
             const brand = document.getElementById('prod-brand').value;
             const description = document.getElementById('prod-description').value;
             const mainImage = document.getElementById('prod-image').value;
@@ -411,19 +421,19 @@ const admin = {
                 return;
             }
 
-            const mrp = Math.round(price * (1 + Math.random() * 0.5 + 1));
-            const discount = Math.round(((mrp - price) / mrp) * 100);
+            const minPrice = weightPrices.length > 0 ? Math.min(...weightPrices.map(w => w.price)) : 0;
+            const maxMrp = weightPrices.length > 0 ? Math.max(...weightPrices.map(w => w.mrp)) : 0;
             const rating = (4 + Math.random()).toFixed(1);
 
             const productData = {
                 name,
                 category,
-                price,
-                mrp,
-                discount,
+                price: minPrice,
+                mrp: maxMrp,
+                discount: 0,
                 rating,
                 sizes,
-                colors,
+                weightPrices,
                 brand,
                 description,
                 images
@@ -591,7 +601,7 @@ const admin = {
         key: (await this.api('/api/payment/key')).key,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: 'VastraKart',
+        name: 'Mahi Home Pickles',
         description: `Payment for Order ${orderId}`,
         order_id: razorpayOrder.id,
         handler: async (response) => {
@@ -622,7 +632,7 @@ const admin = {
         },
         prefill: {
           name: customerName,
-          email: 'customer@vastrakart.com',
+          email: 'customer@mahipickles.com',
           contact: '9876543210'
         },
         method: {
@@ -752,8 +762,8 @@ const admin = {
   async loadSettings() {
     try {
       this.settings = await this.api('/api/settings');
-      document.getElementById('store-name').value = this.settings.storeName || 'VastraKart';
-      document.getElementById('store-email').value = this.settings.email || 'support@vastrakart.com';
+      document.getElementById('store-name').value = this.settings.storeName || 'Mahi Home Pickles';
+      document.getElementById('store-email').value = this.settings.email || 'support@mahipickles.com';
       document.getElementById('store-currency').value = this.settings.currency || '₹';
     } catch (err) {
       console.error('Load settings error:', err);

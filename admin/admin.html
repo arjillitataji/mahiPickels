@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VastraKart Admin Portal</title>
+    <title>Mahi Home Pickles Admin Portal</title>
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 </head>
@@ -12,7 +12,7 @@
 <body>
     <section class="admin-login-screen active" id="admin-login-screen">
         <form class="admin-login-card" onsubmit="admin.login(event)">
-            <p class="admin-login-kicker">VASTRAKART / CONTROL ROOM</p>
+            <p class="admin-login-kicker">MAHI HOME PICKLES / CONTROL ROOM</p>
             <h1>Admin sign in</h1>
             <p>Sign in to manage the store.</p>
             <label for="admin-name">Admin name</label>
@@ -27,7 +27,7 @@
         <!-- Sidebar -->
         <aside class="admin-sidebar">
             <div class="admin-logo">
-                <span class="logo-icon">👗</span> VastraKart Admin
+                <span class="logo-icon">🫙</span> Mahi Home Pickles Admin
             </div>
             <nav class="admin-nav">
                 <button class="admin-nav-item active" onclick="admin.navigate('dashboard')">
@@ -152,8 +152,7 @@
                                 <th>Product Name</th>
                                 <th>Category</th>
                                 <th>Price</th>
-                                <th>Sizes</th>
-                                <th>Colors</th>
+                                <th>Weights</th>
                                 <th>Rating</th>
                                 <th>Actions</th>
                             </tr>
@@ -240,11 +239,11 @@
                     <h3>Store Settings</h3>
                     <div class="form-group">
                         <label>Store Name</label>
-                        <input type="text" id="store-name" value="VastraKart">
+                        <input type="text" id="store-name" value="Mahi Home Pickles">
                     </div>
                     <div class="form-group">
                         <label>Contact Email</label>
-                        <input type="email" id="store-email" value="support@vastrakart.com">
+                        <input type="email" id="store-email" value="support@mahipickles.com">
                     </div>
                     <div class="form-group">
                         <label>Currency</label>
@@ -276,27 +275,17 @@
                     <div class="form-group">
                         <label>Category</label>
                         <select id="prod-category">
-              <option value="Men">Men</option>
-              <option value="Women">Women</option>
-              <option value="Kids">Kids</option>
-              <option value="Ethnic">Ethnic Wear</option>
-              <option value="Formal">Formal</option>
-              <option value="Casual">Casual</option>
-              <option value="Winter">Winter Wear</option>
-              <option value="Sportswear">Sportswear</option>
+              <option value="Veg">Veg Pickles</option>
+              <option value="Non Veg">Non Veg Pickles</option>
             </select>
                     </div>
                     <div class="form-group">
-                        <label>Price (₹)</label>
-                        <input type="number" id="prod-price" required>
+                        <label>Weights (comma separated)</label>
+                        <input type="text" id="prod-sizes" placeholder="250g, 500g, 1kg">
                     </div>
                     <div class="form-group">
-                        <label>Sizes (comma separated)</label>
-                        <input type="text" id="prod-sizes" placeholder="S, M, L, XL">
-                    </div>
-                    <div class="form-group">
-                        <label>Colors (comma separated)</label>
-                        <input type="text" id="prod-colors" placeholder="Red, Blue, Black">
+                        <label>Weight Prices (size:price:mrp per line, e.g. 250g:250:350)</label>
+                        <textarea id="prod-weight-prices" rows="3" placeholder="250g:250:350&#10;500g:450:600&#10;1kg:850:1200"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Brand</label>

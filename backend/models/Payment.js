@@ -9,7 +9,8 @@ const paymentSchema = new mongoose.Schema({
   status: { type: String, default: 'pending' },
   date: { type: String, default: '' },
   razorpayPaymentId: { type: String },
-  razorpaySignature: { type: String }
+  razorpaySignature: { type: String },
+  refundId: { type: String, default: '' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Payment', paymentSchema);
