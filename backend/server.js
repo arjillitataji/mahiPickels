@@ -131,7 +131,10 @@ app.get('/api/orders/:id', asyncRoute(async(req, res) => {
 
 app.post('/api/orders', asyncRoute(async(req, res) => {
     if (!req.body.userId) return res.status(400).json({ error: 'userId is required' });
-    const order = await Order.create({...req.body, id: req.body.id || 'ORD' + Date.now().toString().slice(-8), date: new Date().toISOString() });
+    const orderData = {...req.body, id: req.body.id || 'ORD' + Date.now().toString().slice(-8), date: new Date().toISOString() };
+    if (req.body.razorpayPaymentId) orderData.razorpayPaymentId = req.body.razorpayPaymentId;
+    if (req.body.razorpayOrderId) orderData.razorpayOrderId = req.body.razorpayOrderId;
+    const order = await Order.create(orderData);
     res.status(201).json(serialize(order));
 }));
 
@@ -139,6 +142,10 @@ app.put('/api/orders/:id', asyncRoute(async(req, res) => {
     const order = await Order.findOne({ id: { $regex: new RegExp(`^${req.params.id}$`, 'i') } });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (req.body.status === 'cancelled' && ['shipped', 'delivered', 'cancelled'].includes(order.status)) return res.status(400).json({ error: 'Order cannot be cancelled' });
+    if (req.body.razorpayPaymentId) order.razorpayPaymentId = req.body.razorpayPaymentId;
+    if (req.body.razorpayOrderId) order.razorpayOrderId = req.body.razorpayOrderId;
+    if (req.body.refundStatus) order.refundStatus = req.body.refundStatus;
+    if (req.body.refundId) order.refundId = req.body.refundId;
     Object.assign(order, req.body);
     await order.save();
     res.json(serialize(order));
@@ -397,7 +404,10 @@ app.put('/api/payments/:id', requireAdmin, asyncRoute(async(req, res) => {
 app.post('/api/payment/create-order', asyncRoute(async(req, res) => {
     if (!razorpay) return res.status(503).json({ error: 'Razorpay is not configured' });
     const { amount, currency = 'INR', receipt } = req.body;
-    res.json(await razorpay.orders.create({ amount: amount * 100, currency, receipt: receipt || 'receipt_' + Date.now() }));
+    if (amount == null || isNaN(amount) || Number(amount) < 1) {
+        return res.status(400).json({ error: 'Amount is required and must be at least 1 rupee (100 paise)' });
+    }
+    res.json(await razorpay.orders.create({ amount: Math.round(amount * 100), currency, receipt: receipt || 'receipt_' + Date.now() }));
 }));
 app.post('/api/payment/verify', asyncRoute(async(req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -409,6 +419,46 @@ app.get('/api/payment/key', (req, res) => {
     if (!process.env.RAZORPAY_KEY_ID) return res.status(503).json({ error: 'Razorpay is not configured' });
     res.json({ key: process.env.RAZORPAY_KEY_ID, currency: 'INR' });
 });
+
+app.get('/api/orders/:id/payment-id', asyncRoute(async(req, res) => {
+    const order = await Order.findOne({ id: req.params.id });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json({ razorpayPaymentId: order.razorpayPaymentId || null, razorpayOrderId: order.razorpayOrderId || null });
+}));
+
+// Razorpay Refund
+app.post('/api/payment/refund', asyncRoute(async(req, res) => {
+    if (!razorpay) return res.status(503).json({ error: 'Razorpay is not configured' });
+    const { orderId, razorpayPaymentId, razorpayOrderId, amount, notes } = req.body;
+    let paymentId = razorpayPaymentId;
+
+    if (!paymentId && razorpayOrderId) {
+        try {
+            const orderInfo = await razorpay.orders.fetch(razorpayOrderId);
+            if (orderInfo.payments && orderInfo.payments.length > 0) {
+                paymentId = orderInfo.payments[0].id;
+            }
+        } catch (err) {
+            console.error('Failed to fetch payment from order:', err);
+        }
+    }
+
+    if (!paymentId) return res.status(400).json({ error: 'razorpayPaymentId is required' });
+    if (amount == null || isNaN(amount) || Number(amount) < 1) return res.status(400).json({ error: 'Amount is required and must be at least 1 rupee (100 paise)' });
+
+    const refundData = {
+        amount: Math.round(amount * 100),
+        notes: notes || { order_id: orderId }
+    };
+
+    try {
+        const refund = await razorpay.payments.refund(paymentId, refundData);
+        res.json({ status: 'OK', refund_id: refund.id, amount: refund.amount, message: 'Refund initiated successfully' });
+    } catch (err) {
+        console.error('Refund error:', err);
+        res.status(400).json({ error: err.message || 'Refund failed' });
+    }
+}));
 
 const settingsSchema = new mongoose.Schema({ key: { type: String, unique: true }, value: mongoose.Schema.Types.Mixed });
 const counterSchema = new mongoose.Schema({ key: { type: String, unique: true }, lastNumber: { type: Number, default: 100000 } });
@@ -439,7 +489,7 @@ app.get('*', (req, res) => {
 
 async function start() {
     if (!MONGODB_URI) throw new Error('MONGODB_URI or MONGODB_URI_DIRECT is required');
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, { dbName: process.env.DB_NAME || 'mahipickels' });
     await seedDatabase();
     app.listen(PORT, () => console.log(`Mahi Home Pickles backend running on port ${PORT} with MongoDB`));
 }

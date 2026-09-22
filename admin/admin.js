@@ -2,7 +2,7 @@
 const API_BASE = (typeof window !== 'undefined' && window.ADMIN_API_BASE) ||
     (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') ?
         'http://localhost:10000' :
-        'https://demo-selling.onrender.com');
+        'https://mahipickels.onrender.com');
 
 // --- ADMIN DATA ---
 const admin = {
